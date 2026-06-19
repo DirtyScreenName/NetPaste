@@ -2,9 +2,11 @@ import {
   type FindingsSummary,
   type SensitiveCategory,
   type SensitiveFinding,
+  type TextRange,
   sensitiveCategories
 } from './types';
 import { normalizeLineEndings, removeAnsiSequences } from './cleanText';
+import { maskSensitiveText } from './maskSensitive';
 
 type FindingSource = 'original' | 'cleaned';
 
@@ -15,6 +17,7 @@ interface RawFinding {
   source: FindingSource;
   line: number;
   canonical: string;
+  redactionRanges: TextRange[];
 }
 
 interface MergedFinding extends SensitiveFinding {
@@ -94,11 +97,13 @@ function detectInText(text: string, source: FindingSource): RawFinding[] {
   const normalizedText = normalizeLineEndings(text);
   const lines = normalizedText.split('\n');
   const findings: RawFinding[] = [];
+  let lineStartOffset = 0;
 
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
 
     if (line.length === 0) {
+      lineStartOffset += 1;
       return;
     }
 
@@ -109,16 +114,22 @@ function detectInText(text: string, source: FindingSource): RawFinding[] {
         preview: buildPreview(line, 'Credential or secret'),
         source,
         line: lineNumber,
-        canonical: `credential:${canonicalizeLine(line)}`
+        canonical: `credential:${canonicalizeLine(line)}`,
+        redactionRanges: getCleanedRedactionRanges(
+          source,
+          lineStartOffset,
+          collectCredentialValueRanges(line)
+        )
       });
     }
 
-    collectIpv4Findings(line, source, lineNumber, findings);
-    collectIpv6Findings(line, source, lineNumber, findings);
+    collectIpv4Findings(line, source, lineNumber, lineStartOffset, findings);
+    collectIpv6Findings(line, source, lineNumber, lineStartOffset, findings);
     collectPatternFindings(
       line,
       source,
       lineNumber,
+      lineStartOffset,
       MAC_STANDARD_PATTERN,
       'MAC address',
       (value) => canonicalizeMac(value),
@@ -128,6 +139,7 @@ function detectInText(text: string, source: FindingSource): RawFinding[] {
       line,
       source,
       lineNumber,
+      lineStartOffset,
       MAC_CISCO_PATTERN,
       'MAC address',
       (value) => canonicalizeMac(value),
@@ -137,13 +149,22 @@ function detectInText(text: string, source: FindingSource): RawFinding[] {
       line,
       source,
       lineNumber,
+      lineStartOffset,
       EMAIL_PATTERN,
       'Email address',
       (value) => value.toLowerCase(),
       findings
     );
-    collectUrlFindings(line, source, lineNumber, findings);
-    collectHostnamePromptFinding(line, source, lineNumber, findings);
+    collectUrlFindings(line, source, lineNumber, lineStartOffset, findings);
+    collectHostnamePromptFinding(
+      line,
+      source,
+      lineNumber,
+      lineStartOffset,
+      findings
+    );
+
+    lineStartOffset += line.length + 1;
   });
 
   return findings;
@@ -153,12 +174,14 @@ function collectIpv4Findings(
   line: string,
   source: FindingSource,
   lineNumber: number,
+  lineStartOffset: number,
   findings: RawFinding[]
 ): void {
   IPV4_CANDIDATE_PATTERN.lastIndex = 0;
 
   for (const match of line.matchAll(IPV4_CANDIDATE_PATTERN)) {
     const candidate = match[2];
+    const start = (match.index ?? 0) + match[1].length;
 
     if (!isValidIpv4(candidate)) {
       continue;
@@ -170,7 +193,10 @@ function collectIpv4Findings(
       preview: buildPreview(line, 'IPv4 address'),
       source,
       line: lineNumber,
-      canonical: candidate
+      canonical: candidate,
+      redactionRanges: getCleanedRedactionRanges(source, lineStartOffset, [
+        { start, end: start + candidate.length }
+      ])
     });
   }
 }
@@ -179,11 +205,14 @@ function collectIpv6Findings(
   line: string,
   source: FindingSource,
   lineNumber: number,
+  lineStartOffset: number,
   findings: RawFinding[]
 ): void {
-  const candidates = line.match(/[A-Fa-f0-9:]{2,}(?:%[A-Za-z0-9_.-]+)?/g) ?? [];
+  const pattern = /[A-Fa-f0-9:]{2,}(?:%[A-Za-z0-9_.-]+)?/g;
 
-  for (const candidate of candidates) {
+  for (const match of line.matchAll(pattern)) {
+    const candidate = match[0];
+
     if (/^(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(candidate)) {
       continue;
     }
@@ -198,7 +227,13 @@ function collectIpv6Findings(
       preview: buildPreview(line, 'IPv6 address'),
       source,
       line: lineNumber,
-      canonical: candidate.toLowerCase()
+      canonical: candidate.toLowerCase(),
+      redactionRanges: getCleanedRedactionRanges(source, lineStartOffset, [
+        {
+          start: match.index ?? 0,
+          end: (match.index ?? 0) + candidate.length
+        }
+      ])
     });
   }
 }
@@ -207,6 +242,7 @@ function collectPatternFindings(
   line: string,
   source: FindingSource,
   lineNumber: number,
+  lineStartOffset: number,
   pattern: RegExp,
   category: SensitiveCategory,
   canonicalize: (value: string) => string,
@@ -216,6 +252,7 @@ function collectPatternFindings(
 
   for (const match of line.matchAll(pattern)) {
     const value = match[2] ?? match[0];
+    const start = (match.index ?? 0) + (match[1]?.length ?? 0);
 
     findings.push({
       category,
@@ -223,7 +260,10 @@ function collectPatternFindings(
       preview: buildPreview(line, category),
       source,
       line: lineNumber,
-      canonical: canonicalize(value)
+      canonical: canonicalize(value),
+      redactionRanges: getCleanedRedactionRanges(source, lineStartOffset, [
+        { start, end: start + value.length }
+      ])
     });
   }
 }
@@ -232,6 +272,7 @@ function collectUrlFindings(
   line: string,
   source: FindingSource,
   lineNumber: number,
+  lineStartOffset: number,
   findings: RawFinding[]
 ): void {
   URL_PATTERN.lastIndex = 0;
@@ -245,7 +286,13 @@ function collectUrlFindings(
       preview: buildPreview(line, 'URL'),
       source,
       line: lineNumber,
-      canonical: stripUrlQueryAndFragment(value).toLowerCase()
+      canonical: stripUrlQueryAndFragment(value).toLowerCase(),
+      redactionRanges: getCleanedRedactionRanges(source, lineStartOffset, [
+        {
+          start: match.index ?? 0,
+          end: (match.index ?? 0) + value.length
+        }
+      ])
     });
   }
 }
@@ -254,6 +301,7 @@ function collectHostnamePromptFinding(
   line: string,
   source: FindingSource,
   lineNumber: number,
+  lineStartOffset: number,
   findings: RawFinding[]
 ): void {
   const trimmed = line.trim();
@@ -268,11 +316,118 @@ function collectHostnamePromptFinding(
   findings.push({
     category: 'Hostname prompt',
     severity: 'Review',
-    preview: buildPreview(trimmed, 'Hostname prompt'),
-    source,
-    line: lineNumber,
-    canonical: prompt.toLowerCase()
-  });
+      preview: buildPreview(trimmed, 'Hostname prompt'),
+      source,
+      line: lineNumber,
+      canonical: prompt.toLowerCase(),
+      redactionRanges: getCleanedRedactionRanges(
+        source,
+        lineStartOffset,
+        collectHostnamePromptRanges(line)
+      )
+    });
+}
+
+function getCleanedRedactionRanges(
+  source: FindingSource,
+  lineStartOffset: number,
+  lineRanges: TextRange[]
+): TextRange[] {
+  if (source !== 'cleaned') {
+    return [];
+  }
+
+  return lineRanges
+    .filter((range) => range.end > range.start)
+    .map((range) => ({
+      start: lineStartOffset + range.start,
+      end: lineStartOffset + range.end
+    }));
+}
+
+function collectCredentialValueRanges(line: string): TextRange[] {
+  const ranges: TextRange[] = [];
+
+  addCapturedValueRanges(
+    line,
+    /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
+    ranges
+  );
+  addCapturedValueRanges(
+    line,
+    /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+(?:\s+\S+)*)/gi,
+    ranges
+  );
+  addCapturedValueRanges(
+    line,
+    /\b(bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
+    ranges
+  );
+  addCapturedValueRanges(
+    line,
+    /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+(?:\s+\S+)*)/gi,
+    ranges
+  );
+  addCapturedValueRanges(
+    line,
+    /\b(username)\s+("[^"]+"|'[^']+'|\S+)/gi,
+    ranges
+  );
+  addCapturedValueRanges(
+    line,
+    /\b(enable\s+secret)\b\s+(.+)$/gi,
+    ranges
+  );
+  addCapturedValueRanges(
+    line,
+    /\b(api[-_ ]?key|token)\b\s*[:=]\s*("[^"]+"|'[^']+'|[^\s]+)/gi,
+    ranges
+  );
+  addCapturedValueRanges(
+    line,
+    /\b(password|passwd|secret|community|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(?:\s*[:=])?\s+(.+)$/gi,
+    ranges
+  );
+
+  return mergeRanges(ranges);
+}
+
+function addCapturedValueRanges(
+  line: string,
+  pattern: RegExp,
+  ranges: TextRange[]
+): void {
+  pattern.lastIndex = 0;
+
+  for (const match of line.matchAll(pattern)) {
+    const value = match[2];
+
+    if (!value) {
+      continue;
+    }
+
+    const searchStart = (match.index ?? 0) + match[1].length;
+    const start = line.indexOf(value, searchStart);
+
+    if (start < 0) {
+      continue;
+    }
+
+    ranges.push({ start, end: start + value.length });
+  }
+}
+
+function collectHostnamePromptRanges(line: string): TextRange[] {
+  const match = line.match(
+    /^(\s*)([A-Za-z][A-Za-z0-9._-]{1,63})((?:\([A-Za-z0-9_.:/-]+\))*)([>#])/
+  );
+
+  if (!match) {
+    return [];
+  }
+
+  const start = match[1].length;
+  return [{ start, end: start + match[2].length }];
 }
 
 function mergeEquivalentFindings(rawFindings: RawFinding[]): MergedFinding[] {
@@ -285,6 +440,7 @@ function mergeEquivalentFindings(rawFindings: RawFinding[]): MergedFinding[] {
 
     if (!existing) {
       byKey.set(key, {
+        id: buildFindingId(key),
         category: rawFinding.category,
         severity: rawFinding.severity,
         preview: rawFinding.preview,
@@ -292,6 +448,7 @@ function mergeEquivalentFindings(rawFindings: RawFinding[]): MergedFinding[] {
         originalLine:
           rawFinding.source === 'original' ? rawFinding.line : undefined,
         cleanedLine: rawFinding.source === 'cleaned' ? rawFinding.line : undefined,
+        redactionRanges: [...rawFinding.redactionRanges],
         canonical: rawFinding.canonical,
         order
       });
@@ -310,6 +467,8 @@ function mergeEquivalentFindings(rawFindings: RawFinding[]): MergedFinding[] {
     if (rawFinding.source === 'cleaned' && existing.cleanedLine === undefined) {
       existing.cleanedLine = rawFinding.line;
     }
+
+    existing.redactionRanges.push(...rawFinding.redactionRanges);
 
     if (
       existing.severity === 'Review' &&
@@ -335,7 +494,45 @@ function mergeEquivalentFindings(rawFindings: RawFinding[]): MergedFinding[] {
     }
 
     return left.order - right.order;
-  });
+  }).map((finding) => ({
+    ...finding,
+    redactionRanges: mergeRanges(finding.redactionRanges)
+  }));
+}
+
+function mergeRanges(ranges: TextRange[]): TextRange[] {
+  const sortedRanges = ranges
+    .filter((range) => range.end > range.start)
+    .sort((left, right) => left.start - right.start || left.end - right.end);
+  const merged: TextRange[] = [];
+
+  for (const range of sortedRanges) {
+    const last = merged.at(-1);
+
+    if (!last || range.start > last.end) {
+      merged.push({ ...range });
+      continue;
+    }
+
+    last.end = Math.max(last.end, range.end);
+  }
+
+  return merged;
+}
+
+function buildFindingId(key: string): string {
+  return `finding-${hashString(key)}`;
+}
+
+function hashString(input: string): string {
+  let hash = 0x811c9dc5;
+
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return (hash >>> 0).toString(36);
 }
 
 function severityRank(severity: SensitiveFinding['severity']): number {
@@ -394,27 +591,19 @@ function canonicalizeLine(line: string): string {
     .toLowerCase();
 }
 
-function buildPreview(line: string, category: SensitiveCategory): string {
+function buildPreview(line: string, _category: SensitiveCategory): string {
   let preview = removeAnsiSequences(line)
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  preview = stripUrlSensitiveParts(preview);
-
-  if (category === 'Credential or secret') {
-    preview = maskCredentialValues(preview);
-  }
+  preview = maskSensitiveText(preview);
 
   if (preview.length > MAX_PREVIEW_LENGTH) {
     preview = `${preview.slice(0, MAX_PREVIEW_LENGTH - 3)}...`;
   }
 
   return escapePreview(preview);
-}
-
-function stripUrlSensitiveParts(input: string): string {
-  return input.replace(URL_PATTERN, (url) => stripUrlQueryAndFragment(url));
 }
 
 function stripUrlQueryAndFragment(url: string): string {
@@ -427,38 +616,6 @@ function stripUrlQueryAndFragment(url: string): string {
   }
 
   return url;
-}
-
-function maskCredentialValues(input: string): string {
-  let masked = input;
-
-  masked = masked.replace(
-    /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
-  );
-  masked = masked.replace(/\b(bearer)\s+("[^"]+"|'[^']+'|\S+)/gi, '$1 [masked]');
-  masked = masked.replace(
-    /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)(?:\s+\S+)*/gi,
-    '$1 [masked]'
-  );
-  masked = masked.replace(
-    /\b(username)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
-  );
-  masked = masked.replace(
-    /\b(enable\s+secret)\b(?:\s+\S+)*$/gi,
-    '$1 [masked]'
-  );
-  masked = masked.replace(
-    /\b(password|passwd|secret|community|private\s+key|pre-shared\s+key|preshared\s+key|key-string|api[-_ ]?key|token|authentication\s+key|authorization)\b(?:\s*[:=])?(?:\s+\S+)*$/gi,
-    '$1 [masked]'
-  );
-  masked = masked.replace(
-    /\b(api[-_ ]?key|token)\b\s*[:=]\s*("[^"]+"|'[^']+'|[^\s]+)/gi,
-    '$1=[masked]'
-  );
-
-  return masked;
 }
 
 function escapePreview(input: string): string {

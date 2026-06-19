@@ -46,7 +46,7 @@ describe('detectSensitive', () => {
       .toHaveLength(3);
   });
 
-  test('detects email addresses and URLs with stripped preview query strings', () => {
+  test('detects email addresses and URLs with masked previews', () => {
     const findings = detectSensitive(
       'contact noc@example.com https://example.test/path?token=secret#frag',
       ''
@@ -57,10 +57,26 @@ describe('detectSensitive', () => {
         expect.objectContaining({ category: 'Email address' }),
         expect.objectContaining({
           category: 'URL',
-          preview: 'contact noc@example.com https://example.test/path'
+          preview: 'contact [masked-email] [masked-url]'
         })
       ])
     );
+  });
+
+  test('does not expose raw sensitive values in previews or finding ids', () => {
+    const findings = detectSensitive(
+      '',
+      'Router01#show\nip address 192.0.2.10 255.255.255.0\nmac-address aabb.ccdd.eeff\ncontact noc@example.com https://example.test/path'
+    );
+    const renderedText = findings
+      .map((finding) => `${finding.id} ${finding.preview}`)
+      .join('\n');
+
+    expect(renderedText).not.toContain('Router01');
+    expect(renderedText).not.toContain('192.0.2.10');
+    expect(renderedText).not.toContain('aabb.ccdd.eeff');
+    expect(renderedText).not.toContain('noc@example.com');
+    expect(renderedText).not.toContain('https://example.test/path');
   });
 
   test('detects hostname-like device prompts and avoids obvious false positives', () => {

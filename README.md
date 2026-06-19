@@ -11,11 +11,12 @@ Slack, or AI tools.
 - Removes common terminal pagination markers and backspace artifacts.
 - Trims trailing line whitespace while preserving indentation.
 - Flags common sensitive-looking patterns with category and line number.
+- Removes selected sensitive-looking values from cleaned output locally.
+- Selects high-priority cleaned-output findings for redaction by default.
 - Copies cleaned output as plain text or as a Markdown code block.
 
 ## What it does not do
 
-- It does not redact or rewrite cleaned output automatically.
 - It does not guarantee that every confidential value is detected.
 - It does not upload content or call a backend service.
 - It does not include accounts, analytics, telemetry, AI features, storage,

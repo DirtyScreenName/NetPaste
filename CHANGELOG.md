@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added live per-finding redaction checkboxes for the editable cleaned output.
+- Selected high-priority cleaned-output findings for redaction by default.
+
 ## 0.1.1 - 2026-06-19
 
 - Added minimal Protocols & Packets attribution and parent-site references.

@@ -2,6 +2,13 @@ import { analyzeCurrentText } from '../core/analysis';
 import { cleanText } from '../core/cleanText';
 import { toMarkdownCodeBlock } from '../core/markdown';
 import {
+  applySelectedRedactions,
+  getDefaultSelectedFindingIds,
+  getFindingIds,
+  isRedactableFinding,
+  reconcileSelectedFindingIds
+} from '../core/redaction';
+import {
   type AnalysisResult,
   type FindingsSummary,
   type SensitiveFinding,
@@ -42,35 +49,76 @@ interface AppElements {
   findingsList: HTMLOListElement;
 }
 
+type RedactionChangeHandler = (findingId: string, selected: boolean) => void;
+
 export function initNetPasteApp(rootDocument: Document): void {
   const elements = getAppElements(rootDocument);
+  let cleanedSourceText = '';
+  let selectedFindingIds = new Set<string>();
+  let knownFindingIds = new Set<string>();
   let editDetectionTimer: number | undefined;
 
-  const renderCurrentAnalysis = (): AnalysisResult => {
-    const analysis = analyzeCurrentText(
+  const analyzeSourceText = (): AnalysisResult => {
+    return analyzeCurrentText(
       elements.rawOutput.value,
-      elements.cleanedOutput.value,
+      cleanedSourceText,
       RENDERED_FINDING_LIMIT
     );
+  };
+
+  const renderCurrentState = (analysis = analyzeSourceText()): AnalysisResult => {
+    elements.cleanedOutput.value = applySelectedRedactions(
+      cleanedSourceText,
+      analysis.findings,
+      selectedFindingIds
+    );
     renderAnalysis(elements, analysis, rootDocument);
+    knownFindingIds = getFindingIds(analysis.findings);
+    updateCopyButtons(elements);
     return analysis;
   };
 
-  elements.cleanButton.addEventListener('click', () => {
-    elements.cleanedOutput.value = cleanText(elements.rawOutput.value);
-    const analysis = renderCurrentAnalysis();
+  const handleRedactionChange: RedactionChangeHandler = (findingId, selected) => {
+    if (selected) {
+      selectedFindingIds.add(findingId);
+    } else {
+      selectedFindingIds.delete(findingId);
+    }
+
+    renderCurrentState();
     setStatus(
       elements,
-      `Output cleaned. ${formatFindingCount(analysis.findings.length)} found.`
+      `Redaction selection updated. ${formatRedactionCount(
+        selectedFindingIds.size
+      )} selected.`
     );
-    updateCopyButtons(elements);
+  };
+
+  elements.cleanButton.addEventListener('click', () => {
+    cleanedSourceText = cleanText(elements.rawOutput.value);
+    const analysis = analyzeSourceText();
+    selectedFindingIds = getDefaultSelectedFindingIds(analysis.findings);
+    renderCurrentState(analysis);
+    setStatus(
+      elements,
+      `Output cleaned. ${formatFindingCount(
+        analysis.findings.length
+      )} found. ${formatRedactionCount(selectedFindingIds.size)} selected.`
+    );
   });
 
   elements.cleanedOutput.addEventListener('input', () => {
+    cleanedSourceText = elements.cleanedOutput.value;
     window.clearTimeout(editDetectionTimer);
     editDetectionTimer = window.setTimeout(() => {
-      renderCurrentAnalysis();
-      updateCopyButtons(elements);
+      const previousKnownFindingIds = knownFindingIds;
+      const analysis = analyzeSourceText();
+      selectedFindingIds = reconcileSelectedFindingIds(
+        analysis.findings,
+        selectedFindingIds,
+        previousKnownFindingIds
+      );
+      renderCurrentState(analysis);
     }, DEBOUNCE_MS);
   });
 
@@ -106,27 +154,52 @@ export function initNetPasteApp(rootDocument: Document): void {
 
   elements.exampleButton.addEventListener('click', () => {
     elements.rawOutput.value = EXAMPLE_OUTPUT;
-    elements.cleanedOutput.value = cleanText(EXAMPLE_OUTPUT);
-    const analysis = renderCurrentAnalysis();
+    cleanedSourceText = cleanText(EXAMPLE_OUTPUT);
+    const analysis = analyzeSourceText();
+    selectedFindingIds = getDefaultSelectedFindingIds(analysis.findings);
+    renderCurrentState(analysis);
     setStatus(
       elements,
-      `Example loaded. ${formatFindingCount(analysis.findings.length)} found.`
+      `Example loaded. ${formatFindingCount(
+        analysis.findings.length
+      )} found. ${formatRedactionCount(selectedFindingIds.size)} selected.`
     );
-    updateCopyButtons(elements);
   });
 
   elements.clearButton.addEventListener('click', () => {
     window.clearTimeout(editDetectionTimer);
     elements.rawOutput.value = '';
-    elements.cleanedOutput.value = '';
-    renderCurrentAnalysis();
+    cleanedSourceText = '';
+    selectedFindingIds = new Set();
+    knownFindingIds = new Set();
+    renderCurrentState();
     setStatus(elements, 'Input and output cleared.');
-    updateCopyButtons(elements);
     elements.rawOutput.focus();
   });
 
-  renderCurrentAnalysis();
-  updateCopyButtons(elements);
+  renderCurrentState();
+
+  function renderAnalysis(
+    currentElements: AppElements,
+    analysis: AnalysisResult,
+    currentDocument: Document
+  ): void {
+    currentElements.findingsTotal.textContent = formatFindingCount(
+      analysis.findings.length
+    );
+    renderCategoryCounts(
+      currentElements.categoryCounts,
+      analysis.categoryCounts,
+      currentDocument
+    );
+    renderFindings(
+      currentElements.findingsList,
+      analysis,
+      currentDocument,
+      selectedFindingIds,
+      handleRedactionChange
+    );
+  }
 }
 
 function getAppElements(rootDocument: Document): AppElements {
@@ -163,16 +236,6 @@ function getElement<T extends HTMLElement>(
   return element;
 }
 
-function renderAnalysis(
-  elements: AppElements,
-  analysis: AnalysisResult,
-  rootDocument: Document
-): void {
-  elements.findingsTotal.textContent = formatFindingCount(analysis.findings.length);
-  renderCategoryCounts(elements.categoryCounts, analysis.categoryCounts, rootDocument);
-  renderFindings(elements.findingsList, analysis, rootDocument);
-}
-
 function renderCategoryCounts(
   container: HTMLElement,
   counts: FindingsSummary,
@@ -198,7 +261,9 @@ function renderCategoryCounts(
 function renderFindings(
   list: HTMLOListElement,
   analysis: AnalysisResult,
-  rootDocument: Document
+  rootDocument: Document,
+  selectedFindingIds: ReadonlySet<string>,
+  onRedactionChange: RedactionChangeHandler
 ): void {
   if (analysis.renderedFindings.length === 0) {
     const emptyItem = rootDocument.createElement('li');
@@ -209,7 +274,12 @@ function renderFindings(
   }
 
   const renderedItems = analysis.renderedFindings.map((finding) =>
-    createFindingItem(finding, rootDocument)
+    createFindingItem(
+      finding,
+      rootDocument,
+      selectedFindingIds,
+      onRedactionChange
+    )
   );
 
   if (analysis.hiddenFindingCount > 0) {
@@ -224,7 +294,9 @@ function renderFindings(
 
 function createFindingItem(
   finding: SensitiveFinding,
-  rootDocument: Document
+  rootDocument: Document,
+  selectedFindingIds: ReadonlySet<string>,
+  onRedactionChange: RedactionChangeHandler
 ): HTMLLIElement {
   const item = rootDocument.createElement('li');
   item.className =
@@ -244,7 +316,14 @@ function createFindingItem(
   const location = rootDocument.createElement('span');
   location.textContent = formatLocation(finding);
 
-  meta.append(category, severity, location);
+  const redactControl = createRedactionControl(
+    finding,
+    rootDocument,
+    selectedFindingIds,
+    onRedactionChange
+  );
+
+  meta.append(category, severity, location, redactControl);
 
   const preview = rootDocument.createElement('p');
   preview.className = 'finding-preview';
@@ -252,6 +331,38 @@ function createFindingItem(
 
   item.append(meta, preview);
   return item;
+}
+
+function createRedactionControl(
+  finding: SensitiveFinding,
+  rootDocument: Document,
+  selectedFindingIds: ReadonlySet<string>,
+  onRedactionChange: RedactionChangeHandler
+): HTMLLabelElement {
+  const label = rootDocument.createElement('label');
+  label.className = 'finding-redact-control';
+
+  const checkbox = rootDocument.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked =
+    isRedactableFinding(finding) && selectedFindingIds.has(finding.id);
+  checkbox.disabled = !isRedactableFinding(finding);
+  checkbox.setAttribute(
+    'aria-label',
+    checkbox.disabled
+      ? `Cannot redact ${finding.category}; no cleaned-output match`
+      : `Redact ${finding.category}`
+  );
+  checkbox.addEventListener('change', () => {
+    onRedactionChange(finding.id, checkbox.checked);
+  });
+
+  label.append(
+    checkbox,
+    checkbox.disabled ? 'Original only' : 'Redact'
+  );
+
+  return label;
 }
 
 function formatLocation(finding: SensitiveFinding): string {
@@ -268,6 +379,10 @@ function formatLocation(finding: SensitiveFinding): string {
 
 function formatFindingCount(count: number): string {
   return count === 1 ? '1 finding' : `${count} findings`;
+}
+
+function formatRedactionCount(count: number): string {
+  return count === 1 ? '1 redaction' : `${count} redactions`;
 }
 
 function setStatus(elements: AppElements, message: string): void {

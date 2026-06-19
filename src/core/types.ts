@@ -10,13 +10,20 @@ export const sensitiveCategories = [
 
 export type SensitiveCategory = (typeof sensitiveCategories)[number];
 
+export interface TextRange {
+  start: number;
+  end: number;
+}
+
 export interface SensitiveFinding {
+  id: string;
   category: SensitiveCategory;
   severity: 'Review' | 'High review priority';
   preview: string;
   source: 'original' | 'cleaned' | 'both';
   originalLine?: number;
   cleanedLine?: number;
+  redactionRanges: TextRange[];
 }
 
 export type FindingsSummary = Record<SensitiveCategory, number>;
