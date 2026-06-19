@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-06-19
+
+- Added minimal Protocols & Packets attribution and parent-site references.
+- Added the GitHub Pages custom-domain CNAME file.
+
 ## 0.1.0 - 2026-06-19
 
 - Added the first static NetPaste web app.

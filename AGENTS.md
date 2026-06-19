@@ -3,7 +3,8 @@
 ## Project mission
 
 NetPaste helps network engineers clean messy CLI output locally before sharing it
-in tickets, documentation, GitHub issues, Slack, or AI tools.
+in tickets, documentation, GitHub issues, Slack, or AI tools. It may include
+minimal Protocols & Packets attribution as its parent brand.
 
 ## Frozen v0.1 scope
 
@@ -45,7 +46,8 @@ Do not add accounts, authentication, payments, backend services, cloud storage,
 analytics, AI features, automatic network discovery, configuration uploads,
 vendor APIs, automatic redaction, PDF reports, browser-extension packaging,
 Firefox or Safari support, multiple themes, internationalization, user
-preference persistence, complex branding, a blog, or a database.
+preference persistence, complex branding, a blog, or a database. Minimal
+Protocols & Packets attribution is permitted.
 
 ## Definition of done
 

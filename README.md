@@ -1,8 +1,8 @@
 # NetPaste
 
-NetPaste is a small static web app for network engineers who need to clean messy
-CLI output before placing it into tickets, documentation, GitHub issues, Slack,
-or AI tools.
+NetPaste is a Protocols & Packets tool for network engineers who need to clean
+messy CLI output before placing it into tickets, documentation, GitHub issues,
+Slack, or AI tools.
 
 ## What it does
 
@@ -60,6 +60,9 @@ Run `npm run build`, then deploy the generated `dist/` directory to any static
 host. The privacy-page links are relative. Before deploying beneath a repository
 or other URL subpath, verify that Vite's `base` configuration matches the
 deployment path and test the generated `dist/` build at that path.
+
+The public parent site for NetPaste is Protocols & Packets:
+`https://protocolsandpackets.com/`.
 
 ## Limitations
 

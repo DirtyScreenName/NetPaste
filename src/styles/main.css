@@ -89,6 +89,16 @@ h2 {
   font-size: 1.02rem;
 }
 
+.tool-attribution {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.tool-attribution a {
+  color: var(--accent-dark);
+}
+
 .privacy-link {
   flex: 0 0 auto;
   color: var(--accent-dark);
