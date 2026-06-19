@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="NetPaste cleans messy network CLI output locally before sharing."
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <title>NetPaste</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="masthead">
+        <div>
+          <p class="eyebrow">Processed locally in your browser</p>
+          <h1>NetPaste</h1>
+          <p class="lede">
+            Clean messy network CLI output before placing it in tickets, docs,
+            issues, Slack, or AI tools.
+          </p>
+        </div>
+        <a class="privacy-link" href="privacy.html">Privacy</a>
+      </header>
+
+      <section class="workspace" aria-label="CLI output cleaner">
+        <div class="editor-pane">
+          <label for="raw-output">Raw CLI output</label>
+          <textarea
+            id="raw-output"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="Paste router, switch, firewall, or terminal output here."
+          ></textarea>
+        </div>
+
+        <div class="editor-pane">
+          <label for="cleaned-output">Cleaned output</label>
+          <textarea
+            id="cleaned-output"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="Cleaned output appears here and remains editable."
+          ></textarea>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Output actions">
+        <button id="clean-button" class="primary-action" type="button">
+          Clean Output
+        </button>
+        <button id="copy-text-button" type="button">Copy Text</button>
+        <button id="copy-markdown-button" type="button">Copy Markdown</button>
+        <button id="example-button" type="button">Load Example</button>
+        <button id="clear-button" type="button">Clear</button>
+      </section>
+
+      <p id="status-message" class="status-message" aria-live="polite"></p>
+
+      <section class="findings-region" aria-labelledby="findings-title">
+        <div class="findings-header">
+          <div>
+            <h2 id="findings-title">Sensitive-data findings</h2>
+            <p class="disclaimer">
+              NetPaste flags common sensitive patterns but cannot guarantee that
+              all confidential information has been identified. Review the output
+              before sharing it.
+            </p>
+          </div>
+          <p id="findings-total" class="findings-total">0 findings</p>
+        </div>
+
+        <div
+          id="category-counts"
+          class="category-counts"
+          aria-label="Findings by category"
+        ></div>
+        <ol id="findings-list" class="findings-list"></ol>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

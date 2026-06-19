@@ -1,0 +1,20 @@
+{
+  "name": "netpaste",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Clean messy network CLI output locally before sharing it.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9"
+  }
+}

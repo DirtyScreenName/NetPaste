@@ -1,0 +1,307 @@
+Build the first releasable version of a small product with the working name “NetPaste.”
+
+MISSION
+
+NetPaste helps network engineers clean messy CLI output before placing it into tickets, documentation, GitHub issues, Slack, or AI tools.
+
+The immediate objective is to ship a small, polished, working static web app. Do not build the Chrome extension yet. Structure the core processing logic so it can be reused by a Manifest V3 Chrome extension later.
+
+This is a completion project, not a startup platform. Keep the scope aggressively small.
+
+PRODUCT BEHAVIOR
+
+The user should be able to:
+
+1. Paste network CLI output into an input field.
+2. Click “Clean Output.”
+3. See cleaned output in a separate output field.
+4. See warnings for potentially sensitive information found in the text.
+5. Copy the cleaned output as plain text.
+6. Copy the cleaned output as a Markdown code block.
+7. Clear both fields.
+8. Load a safe built-in example for demonstration.
+
+CLEANING RULES
+
+Implement deterministic, conservative text-cleaning functions that:
+
+- Normalize CRLF and CR line endings to LF.
+- Remove ANSI escape and terminal color/control sequences.
+- Remove null characters and obvious non-printing terminal artifacts.
+- Remove common pagination markers such as:
+  - --More--
+  - ---- More ----
+  - <--- More --->
+- Handle backspace characters commonly produced by terminal pagination.
+- Remove trailing whitespace from every line.
+- Collapse runs of more than two blank lines down to two.
+- Remove leading and trailing blank lines.
+- Preserve indentation and meaningful spacing inside configuration output.
+- Avoid destructive transformations when uncertain.
+
+Do not modify IP addresses, hostnames, passwords, secrets, or other values automatically. Detection and redaction are separate concerns.
+
+SENSITIVE-DATA DETECTION
+
+Analyze the original and cleaned text locally and flag potential sensitive information without automatically altering it.
+
+Detect and report, at minimum:
+
+- IPv4 addresses
+- IPv6 addresses where reasonably identifiable
+- MAC addresses
+- Email addresses
+- URLs
+- Hostname-like device prompts
+- Lines containing words or configuration patterns associated with:
+  - password
+  - passwd
+  - secret
+  - enable secret
+  - username
+  - community
+  - snmp-server community
+  - private key
+  - pre-shared key
+  - preshared key
+  - key-string
+  - API key
+  - token
+  - bearer
+  - authentication key
+
+Each finding should include:
+
+- Category
+- Line number
+- A short, safely escaped preview
+- Severity of “Review” or “High review priority”
+
+Do not display secret values more prominently than they already appear. Never log pasted content to the console.
+
+Show this message near the results:
+
+“NetPaste flags common sensitive patterns but cannot guarantee that all confidential information has been identified. Review the output before sharing it.”
+
+PRIVACY AND SECURITY REQUIREMENTS
+
+- All processing must occur inside the browser.
+- No backend.
+- No API calls.
+- No analytics.
+- No telemetry.
+- No cookies.
+- No localStorage or sessionStorage.
+- No upload functionality.
+- No external fonts, scripts, stylesheets, images, or CDNs.
+- Do not send pasted content anywhere.
+- Do not use innerHTML with user-controlled text.
+- Do not add an AI model or OpenAI API.
+- Include a plain-language privacy page that accurately explains the local-only behavior.
+- Add an obvious “Processed locally in your browser” indicator.
+
+TECHNICAL STACK
+
+Use:
+
+- Vite
+- TypeScript
+- Vanilla HTML and CSS
+- Vitest for unit tests
+- npm
+- No frontend framework
+- No CSS framework
+- No production runtime dependencies unless genuinely necessary
+
+Use a simple structure similar to:
+
+src/
+  core/
+    cleanText.ts
+    detectSensitive.ts
+    markdown.ts
+    types.ts
+  ui/
+    app.ts
+  styles/
+    main.css
+  main.ts
+
+tests/
+  cleanText.test.ts
+  detectSensitive.test.ts
+  markdown.test.ts
+
+public/
+  privacy.html
+
+You may improve this structure if there is a concrete reason, but do not introduce a monorepo, database, server, state-management library, or component framework.
+
+USER INTERFACE
+
+Create a clean, professional, one-page interface designed for technical users.
+
+Include:
+
+- Product name and one-sentence description
+- Input textarea labeled “Raw CLI output”
+- Output textarea labeled “Cleaned output”
+- Clean Output button
+- Copy Text button
+- Copy Markdown button
+- Load Example button
+- Clear button
+- Findings panel
+- Number of findings by category
+- Local-processing/privacy indicator
+- Link to the privacy page
+- Small disclaimer about sensitive-data detection
+
+UI requirements:
+
+- Responsive on desktop and mobile
+- Keyboard accessible
+- Visible focus states
+- Proper labels
+- Good contrast
+- No unnecessary animation
+- No marketing clutter
+- No dashboard layout
+- No login or navigation system
+- Do not make it look like an AI chatbot
+
+MARKDOWN COPYING
+
+When copying as Markdown:
+
+- Wrap the cleaned output in a fenced code block.
+- Use a safe fence length if the content itself contains backticks.
+- Use “text” as the default language identifier.
+- Preserve the cleaned output exactly inside the fence.
+
+TESTING
+
+Write meaningful unit tests covering:
+
+1. ANSI sequence removal.
+2. Pagination-marker removal.
+3. Backspace artifact handling.
+4. Line-ending normalization.
+5. Whitespace preservation.
+6. Blank-line cleanup.
+7. IPv4 detection.
+8. MAC-address detection.
+9. Password/secret configuration detection.
+10. SNMP community detection.
+11. Avoiding obvious false positives where practical.
+12. Markdown output containing embedded backticks.
+13. Empty input.
+14. Large multiline input.
+
+Include at least one sanitized Cisco-style example and one generic terminal-output example in tests.
+
+PROJECT DOCUMENTATION
+
+Create:
+
+1. README.md containing:
+   - What NetPaste does
+   - What it does not do
+   - Privacy model
+   - Local development commands
+   - Test commands
+   - Production build command
+   - Static deployment instructions
+   - Limitations
+   - Deferred Chrome-extension phase
+
+2. AGENTS.md containing:
+   - Project mission
+   - Frozen v0.1 scope
+   - Build, test, and verification commands
+   - Privacy constraints
+   - Prohibited features
+   - Definition of done
+
+3. LICENSE using the MIT License.
+
+4. A concise CHANGELOG.md beginning with version 0.1.0.
+
+FROZEN SCOPE — DO NOT ADD
+
+Do not add:
+
+- Accounts
+- Authentication
+- Payments
+- Backend services
+- Cloud storage
+- Analytics
+- AI features
+- Automatic network discovery
+- Configuration uploads
+- Vendor APIs
+- Automatic redaction
+- PDF reports
+- Browser-extension packaging
+- Firefox or Safari support
+- Multiple themes
+- Internationalization
+- User preference persistence
+- Complex branding
+- A blog
+- A database
+
+WORK PROCESS
+
+1. Inspect the current directory.
+2. If it is empty, scaffold the project.
+3. If relevant files already exist, inspect them before changing anything.
+4. Write a short implementation plan before coding.
+5. Implement the complete web MVP.
+6. Create the tests.
+7. Run formatting if configured.
+8. Run the unit tests.
+9. Run TypeScript checking.
+10. Run the production build.
+11. Review the final diff for:
+    - bugs
+    - unsafe handling of pasted content
+    - accidental network requests
+    - feature creep
+    - accessibility problems
+12. Fix any issues found.
+13. Do not stop after merely scaffolding the project.
+
+Choose sensible implementation details without waiting for confirmation. Only stop to ask a question if a genuine blocker prevents safe progress.
+
+DEFINITION OF DONE
+
+The task is complete only when:
+
+- npm install succeeds.
+- npm test succeeds.
+- TypeScript checking succeeds.
+- npm run build succeeds.
+- The app can be launched locally with a documented command.
+- The core cleaning behavior is covered by tests.
+- Sensitive findings show category and line number.
+- Copy Text and Copy Markdown work.
+- The app makes no network requests during normal use.
+- No pasted content is persisted.
+- The privacy page exists and is accurate.
+- README.md and AGENTS.md are complete.
+- The final product is usable without explanation.
+
+FINAL RESPONSE
+
+When finished, give me:
+
+1. A concise summary of what was built.
+2. The exact commands to run it.
+3. The tests and checks executed, with results.
+4. The primary files created.
+5. Any known limitations.
+6. The smallest next step required to deploy the static web app publicly.
+
+Do not propose additional features unless they are placed under a clearly labeled “Deferred” section.
