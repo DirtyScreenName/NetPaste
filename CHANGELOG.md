@@ -4,6 +4,7 @@
 
 - Added minimal Protocols & Packets attribution and parent-site references.
 - Added the GitHub Pages custom-domain CNAME file.
+- Added the canonical URL for the custom domain.
 
 ## 0.1.0 - 2026-06-19
 
