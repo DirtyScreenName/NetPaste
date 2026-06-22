@@ -38,6 +38,12 @@ const EMAIL_PATTERN =
 const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/gi;
 const HOSTNAME_PROMPT_PATTERN =
   /^\s*([A-Za-z][A-Za-z0-9._-]{1,63}(?:\([A-Za-z0-9_.:/-]+\))*[>#])(?:\s?.*)?$/;
+const AUTHORIZATION_BEARER_VALUE_PATTERN =
+  /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi;
+// Keep this paired with AUTHORIZATION_BEARER_VALUE_PATTERN so bearer values
+// are handled by the more specific rule before generic authorization values.
+const AUTHORIZATION_VALUE_PATTERN =
+  /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+)/gi;
 const REDACTION_PLACEHOLDER_PATTERN = /^<REDACTED(?::[^>]+)?>$/i;
 
 const CREDENTIAL_PATTERNS = [
@@ -352,12 +358,12 @@ function collectCredentialValueRanges(line: string): TextRange[] {
 
   addCapturedValueRanges(
     line,
-    /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
+    AUTHORIZATION_BEARER_VALUE_PATTERN,
     ranges
   );
   addCapturedValueRanges(
     line,
-    /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+)/gi,
+    AUTHORIZATION_VALUE_PATTERN,
     ranges
   );
   addCapturedValueRanges(

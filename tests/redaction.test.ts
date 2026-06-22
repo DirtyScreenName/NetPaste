@@ -47,14 +47,16 @@ describe('applySelectedRedactions', () => {
 
   test('keeps a specific label when overlapping replacements agree', () => {
     const text = 'prefix 192.0.2.10 suffix';
-    const finding = createFinding('ipv4', 'IPv4 address', [
-      rangeFor(text, '192.0.2.10'),
-      { start: text.indexOf('192.0.2'), end: text.indexOf('192.0.2') + '192.0.2'.length }
-    ]);
+    const findings = [
+      createFinding('ipv4-full', 'IPv4 address', [rangeFor(text, '192.0.2.10')]),
+      createFinding('ipv4-partial', 'IPv4 address', [
+        { start: text.indexOf('192.0.2'), end: text.indexOf('192.0.2') + '192.0.2'.length }
+      ])
+    ];
 
-    expect(applySelectedRedactions(text, [finding], new Set(['ipv4']))).toBe(
-      'prefix <REDACTED:IP> suffix'
-    );
+    expect(
+      applySelectedRedactions(text, findings, new Set(['ipv4-full', 'ipv4-partial']))
+    ).toBe('prefix <REDACTED:IP> suffix');
   });
 
   test('one deduplicated finding replaces repeated equivalent occurrences', () => {
@@ -152,13 +154,16 @@ describe('applySelectedRedactions', () => {
     const text = 'password 0 203.0.113.10';
     const findings = detectSensitive('', text);
     const selectedIds = new Set(findings.map((finding) => finding.id));
-
-    expect(
-      findings.some((finding) => finding.category === 'Credential or secret')
-    ).toBe(true);
-    expect(findings.some((finding) => finding.category === 'IPv4 address')).toBe(
-      true
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
     );
+    const ipv4 = findings.find((finding) => finding.category === 'IPv4 address');
+
+    expect(credential).toBeDefined();
+    expect(ipv4).toBeDefined();
+    expect(
+      rangesOverlap(credential?.redactionRanges[0], ipv4?.redactionRanges[0])
+    ).toBe(true);
     expect(applySelectedRedactions(text, findings, selectedIds)).toBe(
       'password 0 <REDACTED>'
     );
@@ -284,6 +289,13 @@ function createFinding(
     cleanedLine: 1,
     redactionRanges
   };
+}
+
+function rangesOverlap(
+  left: TextRange | undefined,
+  right: TextRange | undefined
+): boolean {
+  return Boolean(left && right && left.start < right.end && right.start < left.end);
 }
 
 function rangeFor(text: string, value: string, fromIndex = 0): TextRange {

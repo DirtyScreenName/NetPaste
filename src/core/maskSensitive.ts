@@ -13,6 +13,12 @@ const IPV6_CANDIDATE_PATTERN = /[A-Fa-f0-9:]{2,}(?:%[A-Za-z0-9_.-]+)?/g;
 const HOSTNAME_PROMPT_PATTERN =
   /^(\s*)([A-Za-z][A-Za-z0-9._-]{1,63})((?:\([A-Za-z0-9_.:/-]+\))*)([>#])(.*)?$/;
 
+const AUTHORIZATION_BEARER_VALUE_PATTERN =
+  /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi;
+// Keep this paired with AUTHORIZATION_BEARER_VALUE_PATTERN so bearer values
+// are handled by the more specific rule before generic authorization values.
+const AUTHORIZATION_VALUE_PATTERN =
+  /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+)/gi;
 const LINE_ENDING_PATTERN = /(\r\n|\n|\r)/;
 
 export function maskSensitiveText(input: string): string {
@@ -26,11 +32,11 @@ export function maskCredentialValues(input: string): string {
   let masked = input;
 
   masked = masked.replace(
-   /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   AUTHORIZATION_BEARER_VALUE_PATTERN,
    '$1 [masked]'
   );
   masked = masked.replace(
-   /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+)/gi,
+   AUTHORIZATION_VALUE_PATTERN,
    '$1 [masked]'
   );
   masked = masked.replace(/\b(bearer)\s+("[^"]+"|'[^']+'|\S+)/gi, '$1 [masked]');
