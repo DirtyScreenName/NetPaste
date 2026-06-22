@@ -6,6 +6,26 @@ interface RedactionReplacement extends TextRange {
 
 const GENERIC_REDACTION_LABEL = '<REDACTED>';
 
+const CREDENTIAL_LABEL_RULES = [
+  {
+    pattern: /\bsnmp-server\s+community\b|\bcommunity\b/gi,
+    label: '<REDACTED:COMMUNITY>'
+  },
+  {
+    pattern: /\b(?:authorization|bearer|token|api[-_ ]?key)\b/gi,
+    label: '<REDACTED:TOKEN>'
+  },
+  {
+    pattern:
+      /\b(?:enable\s+secret|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|authentication\s+key|crypto\s+isakmp\s+key)\b/gi,
+    label: '<REDACTED:SECRET>'
+  },
+  {
+    pattern: /\b(?:password|passwd|username)\b/gi,
+    label: '<REDACTED:CREDENTIAL>'
+  }
+] as const;
+
 export function applySelectedRedactions(
   cleanedText: string,
   findings: SensitiveFinding[],
@@ -170,26 +190,24 @@ function getCategoryRedactionLabel(category: SensitiveCategory): string {
 function getCredentialRedactionLabel(text: string, range: TextRange): string {
   const lineStart = Math.max(text.lastIndexOf('\n', range.start - 1) + 1, 0);
   const prefix = text.slice(lineStart, range.start).toLowerCase();
+  let nearestLabel:
+    | {
+        index: number;
+        label: string;
+      }
+    | undefined;
 
-  if (/\bsnmp-server\s+community\b|\bcommunity\b/.test(prefix)) {
-    return '<REDACTED:COMMUNITY>';
+  for (const rule of CREDENTIAL_LABEL_RULES) {
+    rule.pattern.lastIndex = 0;
+
+    for (const match of prefix.matchAll(rule.pattern)) {
+      const index = match.index ?? 0;
+
+      if (!nearestLabel || index > nearestLabel.index) {
+        nearestLabel = { index, label: rule.label };
+      }
+    }
   }
 
-  if (/\b(?:authorization|bearer|token|api[-_ ]?key)\b/.test(prefix)) {
-    return '<REDACTED:TOKEN>';
-  }
-
-  if (
-    /\b(?:secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|authentication\s+key|crypto\s+isakmp\s+key)\b/.test(
-      prefix
-    )
-  ) {
-    return '<REDACTED:SECRET>';
-  }
-
-  if (/\b(?:password|passwd|username)\b/.test(prefix)) {
-    return '<REDACTED:CREDENTIAL>';
-  }
-
-  return '<REDACTED:CREDENTIAL>';
+  return nearestLabel?.label ?? '<REDACTED:CREDENTIAL>';
 }

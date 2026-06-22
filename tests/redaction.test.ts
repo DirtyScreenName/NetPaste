@@ -137,6 +137,19 @@ describe('applySelectedRedactions', () => {
     );
   });
 
+  test('labels multiple credential values on one line by nearest keyword', () => {
+    const text = 'snmp-server community public token abc.def.ghi';
+    const findings = detectSensitive('', text);
+    const selectedIds = getDefaultSelectedFindingIds(findings);
+    const output = applySelectedRedactions(text, findings, selectedIds);
+
+    expect(output).toBe(
+      'snmp-server community <REDACTED:COMMUNITY> token <REDACTED:TOKEN>'
+    );
+    expect(output).not.toContain('public');
+    expect(output).not.toContain('abc.def.ghi');
+  });
+
   test('replaces ISAKMP keys after an encryption type without removing other findings', () => {
     const text = 'crypto isakmp key 6 mySecretKey address 203.0.113.10';
     const findings = detectSensitive('', text);

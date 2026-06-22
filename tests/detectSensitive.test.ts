@@ -149,8 +149,39 @@ describe('detectSensitive', () => {
     expect(credential?.redactionRanges).toHaveLength(1);
   });
 
+  test('detects bearer tokens without exposing values', () => {
+    const findings = detectSensitive('', 'Authorization: Bearer abc.def.ghi');
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
+    );
+
+    expect(credential).toMatchObject({
+      severity: 'High review priority',
+      preview: 'Authorization: Bearer [masked]'
+    });
+    expect(credential?.preview).not.toContain('abc.def.ghi');
+    expect(credential?.redactionRanges).toHaveLength(1);
+  });
+
+  test('collects later generic credential values on lines with specific matches', () => {
+    const findings = detectSensitive(
+      '',
+      'snmp-server community public password 0 laterSecret'
+    );
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
+    );
+
+    expect(credential?.redactionRanges).toHaveLength(2);
+    expect(credential?.preview).not.toContain('public');
+    expect(credential?.preview).not.toContain('laterSecret');
+  });
+
   test('does not create credential findings for redaction placeholders', () => {
-    const findings = detectSensitive('', 'password 0 <REDACTED:CREDENTIAL>');
+    const findings = detectSensitive(
+      '',
+      'password 0 <REDACTED:CREDENTIAL>\nsecret 0 "<REDACTED:SECRET>"'
+    );
 
     expect(
       findings.filter((finding) => finding.category === 'Credential or secret')

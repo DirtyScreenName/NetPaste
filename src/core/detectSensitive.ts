@@ -44,7 +44,7 @@ const AUTHORIZATION_BEARER_VALUE_PATTERN =
 // are handled by the more specific rule before generic authorization values.
 const AUTHORIZATION_VALUE_PATTERN =
   /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+)/gi;
-const REDACTION_PLACEHOLDER_PATTERN = /^<REDACTED(?::[^>]+)?>$/i;
+const REDACTION_PLACEHOLDER_PATTERN = /^["']?<REDACTED(?::[^>]+)?>["']?$/i;
 
 const CREDENTIAL_PATTERNS = [
   /\benable\s+secret\b/i,
@@ -399,10 +399,6 @@ function collectCredentialValueRanges(line: string): TextRange[] {
     /\b((?:api[-_ ]?key|token)\b(?:\s*[:=]\s*|\s+))("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
-
-  if (ranges.length > 0) {
-    return mergeRanges(ranges);
-  }
 
   addCapturedValueRanges(
     line,
