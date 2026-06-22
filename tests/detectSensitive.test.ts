@@ -122,16 +122,31 @@ describe('detectSensitive', () => {
     });
   });
 
-  test('detects bearer tokens and API keys without exposing values', () => {
+  test('detects generic community strings with redactable value ranges', () => {
     const findings = detectSensitive(
-      'Authorization: Bearer abc.def.ghi\napi_key = live_secret_value',
-      ''
+      '',
+      'set snmp community private authorization read-only'
     );
-    const previews = findings.map((finding) => finding.preview).join('\n');
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
+    );
 
-    expect(previews).not.toContain('abc.def.ghi');
-    expect(previews).not.toContain('live_secret_value');
-    expect(findings.filter((finding) => finding.category === 'Credential or secret')).toHaveLength(2);
+    expect(credential).toMatchObject({
+      severity: 'High review priority',
+      preview: 'set snmp community [masked] authorization read-only'
+    });
+    expect(credential?.redactionRanges).toHaveLength(1);
+  });
+
+  test('detects whitespace-separated API keys without exposing values', () => {
+    const findings = detectSensitive('', 'api_key live_secret_value');
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
+    );
+
+    expect(credential?.preview).toContain('api_key [masked]');
+    expect(credential?.preview).not.toContain('live_secret_value');
+    expect(credential?.redactionRanges).toHaveLength(1);
   });
 
   test('avoids credential keyword false positives such as tokenization', () => {

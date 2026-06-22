@@ -41,7 +41,7 @@ describe('applySelectedRedactions', () => {
     ]);
 
     expect(applySelectedRedactions(text, [finding], new Set(['credential']))).toBe(
-      'prefix <REDACTED:CREDENTIAL> suffix'
+      'prefix <REDACTED> suffix'
     );
   });
 
@@ -78,6 +78,19 @@ describe('applySelectedRedactions', () => {
     expect(output).not.toContain('0822455D0A16');
   });
 
+  test('preserves suffix tokens after enable secret values', () => {
+    const text = 'enable secret 5 myEnableSecret address 203.0.113.10';
+    const findings = detectSensitive('', text);
+    const selectedIds = new Set(findings.map((finding) => finding.id));
+    const output = applySelectedRedactions(text, findings, selectedIds);
+
+    expect(output).toBe(
+      'enable secret 5 <REDACTED:SECRET> address <REDACTED:IP>'
+    );
+    expect(output).not.toContain('myEnableSecret');
+    expect(output).not.toContain('203.0.113.10');
+  });
+
   test('replaces only SNMP community values and keeps permission suffixes', () => {
     const text = 'snmp-server community private RO';
     const findings = detectSensitive('', text);
@@ -88,17 +101,49 @@ describe('applySelectedRedactions', () => {
     expect(output).not.toContain('private');
   });
 
-  test('replaces multiple findings on one line with type-specific labels', () => {
-    const text = 'crypto isakmp key mySecretKey address 203.0.113.10';
+  test('replaces generic community values and keeps suffix tokens', () => {
+    const text = 'set snmp community private authorization read-only';
+    const findings = detectSensitive('', text);
+    const selectedIds = getDefaultSelectedFindingIds(findings);
+    const output = applySelectedRedactions(text, findings, selectedIds);
+
+    expect(output).toBe(
+      'set snmp community <REDACTED:COMMUNITY> authorization read-only'
+    );
+    expect(output).not.toContain('private');
+  });
+
+  test('replaces whitespace-separated API key values', () => {
+    const text = 'api_key live_secret_value';
+    const findings = detectSensitive('', text);
+    const selectedIds = getDefaultSelectedFindingIds(findings);
+
+    expect(applySelectedRedactions(text, findings, selectedIds)).toBe(
+      'api_key <REDACTED:TOKEN>'
+    );
+  });
+
+  test('replaces ISAKMP keys after an encryption type without removing other findings', () => {
+    const text = 'crypto isakmp key 6 mySecretKey address 203.0.113.10';
     const findings = detectSensitive('', text);
     const selectedIds = new Set(findings.map((finding) => finding.id));
     const output = applySelectedRedactions(text, findings, selectedIds);
 
     expect(output).toBe(
-      'crypto isakmp key <REDACTED:SECRET> address <REDACTED:IP>'
+      'crypto isakmp key 6 <REDACTED:SECRET> address <REDACTED:IP>'
     );
     expect(output).not.toContain('mySecretKey');
     expect(output).not.toContain('203.0.113.10');
+  });
+
+  test('degrades overlapping replacements with different labels to a generic label', () => {
+    const text = 'password 0 203.0.113.10';
+    const findings = detectSensitive('', text);
+    const selectedIds = new Set(findings.map((finding) => finding.id));
+
+    expect(applySelectedRedactions(text, findings, selectedIds)).toBe(
+      'password 0 <REDACTED>'
+    );
   });
 
   test('keeps multiline config line count after replacing sensitive values', () => {
@@ -191,6 +236,19 @@ describe('selective redaction metadata', () => {
     );
 
     expect(reconciledIds.size).toBe(2);
+  });
+
+  test('does not re-flag redaction labels as credentials after reruns', () => {
+    const initialText = 'password 0 firstSecret';
+    const initialFindings = detectSensitive('', initialText);
+    const selectedIds = getDefaultSelectedFindingIds(initialFindings);
+    const redactedText = applySelectedRedactions(initialText, initialFindings, selectedIds);
+    const rerunFindings = detectSensitive('', redactedText);
+
+    expect(redactedText).toBe('password 0 <REDACTED:CREDENTIAL>');
+    expect(
+      rerunFindings.filter((finding) => finding.category === 'Credential or secret')
+    ).toHaveLength(0);
   });
 });
 

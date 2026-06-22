@@ -26,42 +26,38 @@ export function maskCredentialValues(input: string): string {
   let masked = input;
 
   masked = masked.replace(
-    /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
+   /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(authorization\s*:)\s*(?!bearer\s+\[masked\]$)("[^"]+"|'[^']+'|\S+(?:\s+\S+)*)/gi,
-    '$1 [masked]'
+   /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
   masked = masked.replace(/\b(bearer)\s+("[^"]+"|'[^']+'|\S+)/gi, '$1 [masked]');
   masked = masked.replace(
-    /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
+   /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
+  );
+  masked = masked.replace(/\b(community)\s+("[^"]+"|'[^']+'|\S+)/gi, '$1 [masked]');
+  masked = masked.replace(
+   /\b(username\s+(?:"[^"]+"|'[^']+'|\S+)\s+(?:password|secret)(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(username\s+(?:"[^"]+"|'[^']+'|\S+)\s+(?:password|secret)(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
+   /\b(enable\s+secret(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(enable\s+secret(?:\s+(?:0|5|7|8|9))?)\s+.+$/gi,
-    '$1 [masked]'
+   /\b(crypto\s+isakmp\s+key(?:\s+\d+)?)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(crypto\s+isakmp\s+key)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
+   /\b((?:api[-_ ]?key|token)\b(?:\s*[:=]\s*|\s+))("[^"]+"|'[^']+'|\S+)/gi,
+   '$1[masked]'
   );
   masked = masked.replace(
-    /\b(api[-_ ]?key|token)\b(\s*[:=]\s*)("[^"]+"|'[^']+'|[^\s]+)/gi,
-    '$1$2[masked]'
-  );
-  masked = masked.replace(
-    /\b(password|passwd|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(\s*[:=])?(\s+(?:0|5|7|8|9))?\s+.+$/gi,
-    (
-      _match,
-      keyword: string,
-      separator: string | undefined,
-      secretType: string | undefined
-    ) => `${keyword}${separator ?? ''}${secretType ?? ''} [masked]`
+   /\b((?:password|passwd|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(?:\s*[:=])?(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
 
   return masked;

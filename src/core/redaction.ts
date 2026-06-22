@@ -125,6 +125,10 @@ function mergeReplacements(
       continue;
     }
 
+    if (replacement.label !== lastReplacement.label) {
+      lastReplacement.label = '<REDACTED>';
+    }
+
     if (replacement.end > lastReplacement.end) {
       lastReplacement.end = replacement.end;
     }
