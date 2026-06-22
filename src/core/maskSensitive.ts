@@ -13,6 +13,12 @@ const IPV6_CANDIDATE_PATTERN = /[A-Fa-f0-9:]{2,}(?:%[A-Za-z0-9_.-]+)?/g;
 const HOSTNAME_PROMPT_PATTERN =
   /^(\s*)([A-Za-z][A-Za-z0-9._-]{1,63})((?:\([A-Za-z0-9_.:/-]+\))*)([>#])(.*)?$/;
 
+const AUTHORIZATION_BEARER_VALUE_PATTERN =
+  /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi;
+// Keep this paired with AUTHORIZATION_BEARER_VALUE_PATTERN so bearer values
+// are handled by the more specific rule before generic authorization values.
+const AUTHORIZATION_VALUE_PATTERN =
+  /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+)/gi;
 const LINE_ENDING_PATTERN = /(\r\n|\n|\r)/;
 
 export function maskSensitiveText(input: string): string {
@@ -26,42 +32,38 @@ export function maskCredentialValues(input: string): string {
   let masked = input;
 
   masked = masked.replace(
-    /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
+   AUTHORIZATION_BEARER_VALUE_PATTERN,
+   '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(authorization\s*:)\s*(?!bearer\s+\[masked\]$)("[^"]+"|'[^']+'|\S+(?:\s+\S+)*)/gi,
-    '$1 [masked]'
+   AUTHORIZATION_VALUE_PATTERN,
+   '$1 [masked]'
   );
   masked = masked.replace(/\b(bearer)\s+("[^"]+"|'[^']+'|\S+)/gi, '$1 [masked]');
   masked = masked.replace(
-    /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
+   /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
+  );
+  masked = masked.replace(/\b(community)\s+("[^"]+"|'[^']+'|\S+)/gi, '$1 [masked]');
+  masked = masked.replace(
+   /\b(username\s+(?:"[^"]+"|'[^']+'|\S+)\s+(?:password|secret)(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(username\s+(?:"[^"]+"|'[^']+'|\S+)\s+(?:password|secret)(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
+   /\b(enable\s+secret(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(enable\s+secret(?:\s+(?:0|5|7|8|9))?)\s+.+$/gi,
-    '$1 [masked]'
+   /\b(crypto\s+isakmp\s+key(?:\s+\d+)?)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(crypto\s+isakmp\s+key)\s+("[^"]+"|'[^']+'|\S+)/gi,
-    '$1 [masked]'
+   /\b((?:api[-_ ]?key|token)\b(?:\s*[:=]\s*|\s+))("[^"]+"|'[^']+'|\S+)/gi,
+   '$1[masked]'
   );
   masked = masked.replace(
-    /\b(api[-_ ]?key|token)\b(\s*[:=]\s*)("[^"]+"|'[^']+'|[^\s]+)/gi,
-    '$1$2[masked]'
-  );
-  masked = masked.replace(
-    /\b(password|passwd|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(\s*[:=])?(\s+(?:0|5|7|8|9))?\s+.+$/gi,
-    (
-      _match,
-      keyword: string,
-      separator: string | undefined,
-      secretType: string | undefined
-    ) => `${keyword}${separator ?? ''}${secretType ?? ''} [masked]`
+   /\b((?:password|passwd|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(?:\s*[:=])?(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
+   '$1 [masked]'
   );
 
   return masked;

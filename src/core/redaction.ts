@@ -4,6 +4,8 @@ interface RedactionReplacement extends TextRange {
   label: string;
 }
 
+const GENERIC_REDACTION_LABEL = '<REDACTED>';
+
 export function applySelectedRedactions(
   cleanedText: string,
   findings: SensitiveFinding[],
@@ -125,6 +127,10 @@ function mergeReplacements(
       continue;
     }
 
+    if (replacement.label !== lastReplacement.label) {
+      lastReplacement.label = GENERIC_REDACTION_LABEL;
+    }
+
     if (replacement.end > lastReplacement.end) {
       lastReplacement.end = replacement.end;
     }
@@ -157,7 +163,7 @@ function getCategoryRedactionLabel(category: SensitiveCategory): string {
     case 'URL':
       return '<REDACTED:URL>';
     default:
-      return '<REDACTED>';
+      return GENERIC_REDACTION_LABEL;
   }
 }
 

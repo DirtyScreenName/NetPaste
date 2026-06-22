@@ -38,6 +38,13 @@ const EMAIL_PATTERN =
 const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/gi;
 const HOSTNAME_PROMPT_PATTERN =
   /^\s*([A-Za-z][A-Za-z0-9._-]{1,63}(?:\([A-Za-z0-9_.:/-]+\))*[>#])(?:\s?.*)?$/;
+const AUTHORIZATION_BEARER_VALUE_PATTERN =
+  /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi;
+// Keep this paired with AUTHORIZATION_BEARER_VALUE_PATTERN so bearer values
+// are handled by the more specific rule before generic authorization values.
+const AUTHORIZATION_VALUE_PATTERN =
+  /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+)/gi;
+const REDACTION_PLACEHOLDER_PATTERN = /^<REDACTED(?::[^>]+)?>$/i;
 
 const CREDENTIAL_PATTERNS = [
   /\benable\s+secret\b/i,
@@ -109,19 +116,21 @@ function detectInText(text: string, source: FindingSource): RawFinding[] {
     }
 
     if (isCredentialLine(line)) {
-      findings.push({
-        category: 'Credential or secret',
-        severity: 'High review priority',
-        preview: buildPreview(line, 'Credential or secret'),
-        source,
-        line: lineNumber,
-        canonical: `credential:${canonicalizeLine(line)}`,
-        redactionRanges: getCleanedRedactionRanges(
+      const redactionRanges = collectCredentialValueRanges(line);
+
+      // Skip empty credential findings so already-redacted placeholders do not
+      // get re-flagged on subsequent cleaned-output detection runs.
+      if (redactionRanges.length > 0) {
+        findings.push({
+          category: 'Credential or secret',
+          severity: 'High review priority',
+          preview: buildPreview(line, 'Credential or secret'),
           source,
-          lineStartOffset,
-          collectCredentialValueRanges(line)
-        )
-      });
+          line: lineNumber,
+          canonical: `credential:${canonicalizeLine(line)}`,
+          redactionRanges: getCleanedRedactionRanges(source, lineStartOffset, redactionRanges)
+        });
+      }
     }
 
     collectIpv4Findings(line, source, lineNumber, lineStartOffset, findings);
@@ -351,12 +360,12 @@ function collectCredentialValueRanges(line: string): TextRange[] {
 
   addCapturedValueRanges(
     line,
-    /\b(authorization\s*:\s*bearer)\s+("[^"]+"|'[^']+'|\S+)/gi,
+    AUTHORIZATION_BEARER_VALUE_PATTERN,
     ranges
   );
   addCapturedValueRanges(
     line,
-    /\b(authorization\s*:)\s*(?!bearer\b)("[^"]+"|'[^']+'|\S+(?:\s+\S+)*)/gi,
+    AUTHORIZATION_VALUE_PATTERN,
     ranges
   );
   addCapturedValueRanges(
@@ -369,6 +378,7 @@ function collectCredentialValueRanges(line: string): TextRange[] {
     /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
+  addCapturedValueRanges(line, /\b(community)\s+("[^"]+"|'[^']+'|\S+)/gi, ranges);
   addCapturedValueRanges(
     line,
     /\b(username\s+(?:"[^"]+"|'[^']+'|\S+)\s+(?:password|secret)(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
@@ -376,17 +386,17 @@ function collectCredentialValueRanges(line: string): TextRange[] {
   );
   addCapturedValueRanges(
     line,
-    /\b(enable\s+secret(?:\s+(?:0|5|7|8|9))?)\s+(.+)$/gi,
+    /\b(enable\s+secret(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
   addCapturedValueRanges(
     line,
-    /\b(crypto\s+isakmp\s+key)\s+("[^"]+"|'[^']+'|\S+)/gi,
+    /\b(crypto\s+isakmp\s+key(?:\s+\d+)?)\s+("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
   addCapturedValueRanges(
     line,
-    /\b(api[-_ ]?key|token)\b\s*[:=]\s*("[^"]+"|'[^']+'|[^\s]+)/gi,
+    /\b((?:api[-_ ]?key|token)\b(?:\s*[:=]\s*|\s+))("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
 
@@ -396,7 +406,7 @@ function collectCredentialValueRanges(line: string): TextRange[] {
 
   addCapturedValueRanges(
     line,
-    /\b(password|passwd|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(?:\s*[:=])?(?:\s+(?:0|5|7|8|9))?\s+(.+)$/gi,
+    /\b((?:password|passwd|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(?:\s*[:=])?(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
 
@@ -413,7 +423,7 @@ function addCapturedValueRanges(
   for (const match of line.matchAll(pattern)) {
     const value = match[2];
 
-    if (!value) {
+    if (!value || REDACTION_PLACEHOLDER_PATTERN.test(value)) {
       continue;
     }
 
