@@ -38,14 +38,14 @@ describe('maskSensitiveText', () => {
       ].join('\n')
     );
 
-    expect(masked).toContain('username [masked] secret [masked]');
-    expect(masked).toContain('password [masked]');
-    expect(masked).toContain('snmp-server community [masked]');
+    expect(masked).toContain('username admin secret 5 [masked]');
+    expect(masked).toContain('password 7 [masked]');
+    expect(masked).toContain('snmp-server community [masked] RO');
     expect(masked).toContain('Authorization: Bearer [masked]');
-    expect(masked).toContain('api_key [masked]');
+    expect(masked).toContain('api_key = [masked]');
     expect(masked).not.toContain('$1$abcdef');
     expect(masked).not.toContain('0822455D0A16');
-    expect(masked).not.toContain('public RO');
+    expect(masked).not.toContain('public');
     expect(masked).not.toContain('abc.def.ghi');
     expect(masked).not.toContain('live_secret_value');
   });

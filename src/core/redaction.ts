@@ -1,15 +1,24 @@
-import type { SensitiveFinding, TextRange } from './types';
+import type { SensitiveCategory, SensitiveFinding, TextRange } from './types';
+
+interface RedactionReplacement extends TextRange {
+  label: string;
+}
 
 export function applySelectedRedactions(
   cleanedText: string,
   findings: SensitiveFinding[],
   selectedIds: ReadonlySet<string>
 ): string {
-  const ranges = findings
+  const replacements = findings
     .filter((finding) => selectedIds.has(finding.id))
-    .flatMap((finding) => finding.redactionRanges);
+    .flatMap((finding) =>
+      finding.redactionRanges.map((range) => ({
+        ...range,
+        label: getRedactionLabel(finding, cleanedText, range)
+      }))
+    );
 
-  return removeRanges(cleanedText, mergeRanges(ranges));
+  return replaceRanges(cleanedText, mergeReplacements(replacements));
 }
 
 export function getDefaultSelectedFindingIds(
@@ -58,92 +67,123 @@ function isDefaultSelectedFinding(finding: SensitiveFinding): boolean {
   );
 }
 
-function removeRanges(text: string, ranges: TextRange[]): string {
+function replaceRanges(
+  text: string,
+  replacements: RedactionReplacement[]
+): string {
   let redactedText = text;
 
-  for (const range of [...ranges].sort((left, right) => right.start - left.start)) {
-    redactedText = removeRange(redactedText, range);
+  for (const replacement of [...replacements].sort(
+    (left, right) => right.start - left.start
+  )) {
+    redactedText = replaceRange(redactedText, replacement);
   }
 
   return redactedText;
 }
 
-function removeRange(text: string, range: TextRange): string {
+function replaceRange(text: string, replacement: RedactionReplacement): string {
+  const range = clampRange(text, replacement);
+
+  if (!range) {
+    return text;
+  }
+
+  return `${text.slice(0, range.start)}${replacement.label}${text.slice(range.end)}`;
+}
+
+function clampRange(text: string, range: TextRange): TextRange | undefined {
   const start = Math.max(0, Math.min(range.start, text.length));
   const end = Math.max(start, Math.min(range.end, text.length));
 
   if (end <= start) {
-    return text;
+    return undefined;
   }
 
-  const leftWhitespaceStart = findHorizontalWhitespaceStart(text, start);
-  const rightWhitespaceEnd = findHorizontalWhitespaceEnd(text, end);
-  const hasLeftWhitespace = leftWhitespaceStart < start;
-  const hasRightWhitespace = rightWhitespaceEnd > end;
-  const leftBoundary =
-    leftWhitespaceStart === 0 || isLineBreak(text[leftWhitespaceStart - 1]);
-  const rightBoundary =
-    rightWhitespaceEnd >= text.length || isLineBreak(text[rightWhitespaceEnd]);
-
-  if (hasLeftWhitespace && hasRightWhitespace && !leftBoundary && !rightBoundary) {
-    return `${text.slice(0, leftWhitespaceStart)} ${text.slice(rightWhitespaceEnd)}`;
-  }
-
-  if (hasLeftWhitespace && rightBoundary) {
-    return `${text.slice(0, leftWhitespaceStart)}${text.slice(end)}`;
-  }
-
-  if (hasRightWhitespace && leftBoundary) {
-    return `${text.slice(0, start)}${text.slice(rightWhitespaceEnd)}`;
-  }
-
-  return `${text.slice(0, start)}${text.slice(end)}`;
+  return { start, end };
 }
 
-function mergeRanges(ranges: TextRange[]): TextRange[] {
-  const sortedRanges = ranges
-    .filter((range) => range.end > range.start)
-    .sort((left, right) => left.start - right.start || left.end - right.end);
-  const mergedRanges: TextRange[] = [];
+function mergeReplacements(
+  replacements: RedactionReplacement[]
+): RedactionReplacement[] {
+  const sortedReplacements = replacements
+    .filter((replacement) => replacement.end > replacement.start)
+    .sort((left, right) => {
+      return (
+        left.start - right.start ||
+        right.end - left.end ||
+        left.label.localeCompare(right.label)
+      );
+    });
+  const mergedReplacements: RedactionReplacement[] = [];
 
-  for (const range of sortedRanges) {
-    const lastRange = mergedRanges.at(-1);
+  for (const replacement of sortedReplacements) {
+    const lastReplacement = mergedReplacements.at(-1);
 
-    if (!lastRange || range.start > lastRange.end) {
-      mergedRanges.push({ ...range });
+    if (!lastReplacement || replacement.start > lastReplacement.end) {
+      mergedReplacements.push({ ...replacement });
       continue;
     }
 
-    lastRange.end = Math.max(lastRange.end, range.end);
+    if (replacement.end > lastReplacement.end) {
+      lastReplacement.end = replacement.end;
+    }
   }
 
-  return mergedRanges;
+  return mergedReplacements;
 }
 
-function findHorizontalWhitespaceStart(text: string, start: number): number {
-  let index = start;
-
-  while (index > 0 && isHorizontalWhitespace(text[index - 1])) {
-    index -= 1;
+function getRedactionLabel(
+  finding: SensitiveFinding,
+  text: string,
+  range: TextRange
+): string {
+  if (finding.category === 'Credential or secret') {
+    return getCredentialRedactionLabel(text, range);
   }
 
-  return index;
+  return getCategoryRedactionLabel(finding.category);
 }
 
-function findHorizontalWhitespaceEnd(text: string, end: number): number {
-  let index = end;
+function getCategoryRedactionLabel(category: SensitiveCategory): string {
+  switch (category) {
+    case 'IPv4 address':
+    case 'IPv6 address':
+      return '<REDACTED:IP>';
+    case 'MAC address':
+      return '<REDACTED:MAC>';
+    case 'Email address':
+      return '<REDACTED:EMAIL>';
+    case 'URL':
+      return '<REDACTED:URL>';
+    default:
+      return '<REDACTED>';
+  }
+}
 
-  while (index < text.length && isHorizontalWhitespace(text[index])) {
-    index += 1;
+function getCredentialRedactionLabel(text: string, range: TextRange): string {
+  const lineStart = Math.max(text.lastIndexOf('\n', range.start - 1) + 1, 0);
+  const prefix = text.slice(lineStart, range.start).toLowerCase();
+
+  if (/\bsnmp-server\s+community\b|\bcommunity\b/.test(prefix)) {
+    return '<REDACTED:COMMUNITY>';
   }
 
-  return index;
-}
+  if (/\b(?:authorization|bearer|token|api[-_ ]?key)\b/.test(prefix)) {
+    return '<REDACTED:TOKEN>';
+  }
 
-function isHorizontalWhitespace(character: string | undefined): boolean {
-  return character === ' ' || character === '\t';
-}
+  if (
+    /\b(?:secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|authentication\s+key|crypto\s+isakmp\s+key)\b/.test(
+      prefix
+    )
+  ) {
+    return '<REDACTED:SECRET>';
+  }
 
-function isLineBreak(character: string | undefined): boolean {
-  return character === '\n' || character === '\r';
+  if (/\b(?:password|passwd|username)\b/.test(prefix)) {
+    return '<REDACTED:CREDENTIAL>';
+  }
+
+  return '<REDACTED:CREDENTIAL>';
 }

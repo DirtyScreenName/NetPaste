@@ -35,24 +35,33 @@ export function maskCredentialValues(input: string): string {
   );
   masked = masked.replace(/\b(bearer)\s+("[^"]+"|'[^']+'|\S+)/gi, '$1 [masked]');
   masked = masked.replace(
-    /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)(?:\s+\S+)*/gi,
+    /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)/gi,
     '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(username)\s+("[^"]+"|'[^']+'|\S+)/gi,
+    /\b(username\s+(?:"[^"]+"|'[^']+'|\S+)\s+(?:password|secret)(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
     '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(enable\s+secret)\b(?:\s+\S+)*$/gi,
+    /\b(enable\s+secret(?:\s+(?:0|5|7|8|9))?)\s+.+$/gi,
     '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(password|passwd|secret|community|private\s+key|pre-shared\s+key|preshared\s+key|key-string|api[-_ ]?key|token|authentication\s+key)\b(?:\s*[:=])?(?:\s+\S+)*$/gi,
+    /\b(crypto\s+isakmp\s+key)\s+("[^"]+"|'[^']+'|\S+)/gi,
     '$1 [masked]'
   );
   masked = masked.replace(
-    /\b(api[-_ ]?key|token)\b\s*[:=]\s*("[^"]+"|'[^']+'|[^\s]+)/gi,
-    '$1=[masked]'
+    /\b(api[-_ ]?key|token)\b(\s*[:=]\s*)("[^"]+"|'[^']+'|[^\s]+)/gi,
+    '$1$2[masked]'
+  );
+  masked = masked.replace(
+    /\b(password|passwd|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(\s*[:=])?(\s+(?:0|5|7|8|9))?\s+.+$/gi,
+    (
+      _match,
+      keyword: string,
+      separator: string | undefined,
+      secretType: string | undefined
+    ) => `${keyword}${separator ?? ''}${secretType ?? ''} [masked]`
   );
 
   return masked;

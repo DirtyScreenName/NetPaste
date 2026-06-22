@@ -118,7 +118,7 @@ describe('detectSensitive', () => {
 
     expect(credential).toMatchObject({
       severity: 'High review priority',
-      preview: 'snmp-server community [masked]'
+      preview: 'snmp-server community [masked] RO'
     });
   });
 

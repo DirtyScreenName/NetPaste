@@ -46,6 +46,7 @@ const CREDENTIAL_PATTERNS = [
   /\bpre-shared\s+key\b/i,
   /\bpreshared\s+key\b/i,
   /\bkey-string\b/i,
+  /\bcrypto\s+isakmp\s+key\b/i,
   /\bapi[-_ ]?key\b/i,
   /\bauthentication\s+key\b/i,
   /\bpassword\b/i,
@@ -365,17 +366,22 @@ function collectCredentialValueRanges(line: string): TextRange[] {
   );
   addCapturedValueRanges(
     line,
-    /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+(?:\s+\S+)*)/gi,
+    /\b(snmp-server\s+community)\s+("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
   addCapturedValueRanges(
     line,
-    /\b(username)\s+("[^"]+"|'[^']+'|\S+)/gi,
+    /\b(username\s+(?:"[^"]+"|'[^']+'|\S+)\s+(?:password|secret)(?:\s+(?:0|5|7|8|9))?)\s+("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
   addCapturedValueRanges(
     line,
-    /\b(enable\s+secret)\b\s+(.+)$/gi,
+    /\b(enable\s+secret(?:\s+(?:0|5|7|8|9))?)\s+(.+)$/gi,
+    ranges
+  );
+  addCapturedValueRanges(
+    line,
+    /\b(crypto\s+isakmp\s+key)\s+("[^"]+"|'[^']+'|\S+)/gi,
     ranges
   );
   addCapturedValueRanges(
@@ -383,9 +389,14 @@ function collectCredentialValueRanges(line: string): TextRange[] {
     /\b(api[-_ ]?key|token)\b\s*[:=]\s*("[^"]+"|'[^']+'|[^\s]+)/gi,
     ranges
   );
+
+  if (ranges.length > 0) {
+    return mergeRanges(ranges);
+  }
+
   addCapturedValueRanges(
     line,
-    /\b(password|passwd|secret|community|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(?:\s*[:=])?\s+(.+)$/gi,
+    /\b(password|passwd|secret|private\s+key|pre-shared\s+key|preshared\s+key|key-string|token|authentication\s+key)\b(?:\s*[:=])?(?:\s+(?:0|5|7|8|9))?\s+(.+)$/gi,
     ranges
   );
 

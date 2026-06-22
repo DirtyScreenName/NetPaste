@@ -127,7 +127,10 @@ export function initNetPasteApp(rootDocument: Document): void {
   });
 
   elements.copyTextButton.addEventListener('click', () => {
-    copyToClipboard(elements.cleanedOutput.value, rootDocument)
+    copyToClipboard(
+      getPlainTextCopyPayload(elements.cleanedOutput.value),
+      rootDocument
+    )
       .then(() => {
         setStatus(elements, 'Cleaned output copied as plain text.');
       })
@@ -140,7 +143,10 @@ export function initNetPasteApp(rootDocument: Document): void {
   });
 
   elements.copyMarkdownButton.addEventListener('click', () => {
-    copyToClipboard(toMarkdownCodeBlock(elements.cleanedOutput.value), rootDocument)
+    copyToClipboard(
+      getMarkdownCopyPayload(elements.cleanedOutput.value),
+      rootDocument
+    )
       .then(() => {
         setStatus(elements, 'Cleaned output copied as a Markdown code block.');
       })
@@ -200,6 +206,14 @@ export function initNetPasteApp(rootDocument: Document): void {
       handleRedactionChange
     );
   }
+}
+
+export function getPlainTextCopyPayload(currentCleanedOutput: string): string {
+  return currentCleanedOutput;
+}
+
+export function getMarkdownCopyPayload(currentCleanedOutput: string): string {
+  return toMarkdownCodeBlock(currentCleanedOutput);
 }
 
 function getAppElements(rootDocument: Document): AppElements {

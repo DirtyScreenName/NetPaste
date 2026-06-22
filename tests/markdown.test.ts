@@ -19,4 +19,13 @@ describe('toMarkdownCodeBlock', () => {
   test('preserves existing trailing newline before the closing fence', () => {
     expect(toMarkdownCodeBlock('line\n')).toBe('```text\nline\n```');
   });
+
+  test('keeps redaction labels from the current edited cleaned output', () => {
+    const editedOutput =
+      'username admin password 7 <REDACTED:CREDENTIAL>';
+
+    expect(toMarkdownCodeBlock(editedOutput)).toBe(
+      '```text\nusername admin password 7 <REDACTED:CREDENTIAL>\n```'
+    );
+  });
 });

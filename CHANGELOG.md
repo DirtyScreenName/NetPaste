@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace removed sensitive values with redaction labels so cleaned network
+  configs preserve structure.
 - Added live per-finding redaction checkboxes for the editable cleaned output.
 - Selected high-priority cleaned-output findings for redaction by default.
 
