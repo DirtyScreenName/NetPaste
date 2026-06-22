@@ -118,20 +118,74 @@ describe('detectSensitive', () => {
 
     expect(credential).toMatchObject({
       severity: 'High review priority',
-      preview: 'snmp-server community [masked]'
+      preview: 'snmp-server community [masked] RO'
     });
   });
 
-  test('detects bearer tokens and API keys without exposing values', () => {
+  test('detects generic community strings with redactable value ranges', () => {
     const findings = detectSensitive(
-      'Authorization: Bearer abc.def.ghi\napi_key = live_secret_value',
-      ''
+      '',
+      'set snmp community private authorization read-only'
     );
-    const previews = findings.map((finding) => finding.preview).join('\n');
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
+    );
 
-    expect(previews).not.toContain('abc.def.ghi');
-    expect(previews).not.toContain('live_secret_value');
-    expect(findings.filter((finding) => finding.category === 'Credential or secret')).toHaveLength(2);
+    expect(credential).toMatchObject({
+      severity: 'High review priority',
+      preview: 'set snmp community [masked] authorization read-only'
+    });
+    expect(credential?.redactionRanges).toHaveLength(1);
+  });
+
+  test('detects whitespace-separated API keys without exposing values', () => {
+    const findings = detectSensitive('', 'api_key live_secret_value');
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
+    );
+
+    expect(credential?.preview).toContain('api_key [masked]');
+    expect(credential?.preview).not.toContain('live_secret_value');
+    expect(credential?.redactionRanges).toHaveLength(1);
+  });
+
+  test('detects bearer tokens without exposing values', () => {
+    const findings = detectSensitive('', 'Authorization: Bearer abc.def.ghi');
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
+    );
+
+    expect(credential).toMatchObject({
+      severity: 'High review priority',
+      preview: 'Authorization: Bearer [masked]'
+    });
+    expect(credential?.preview).not.toContain('abc.def.ghi');
+    expect(credential?.redactionRanges).toHaveLength(1);
+  });
+
+  test('collects later generic credential values on lines with specific matches', () => {
+    const findings = detectSensitive(
+      '',
+      'snmp-server community public password 0 laterSecret'
+    );
+    const credential = findings.find(
+      (finding) => finding.category === 'Credential or secret'
+    );
+
+    expect(credential?.redactionRanges).toHaveLength(2);
+    expect(credential?.preview).not.toContain('public');
+    expect(credential?.preview).not.toContain('laterSecret');
+  });
+
+  test('does not create credential findings for redaction placeholders', () => {
+    const findings = detectSensitive(
+      '',
+      'password 0 <REDACTED:CREDENTIAL>\nsecret 0 "<REDACTED:SECRET>"'
+    );
+
+    expect(
+      findings.filter((finding) => finding.category === 'Credential or secret')
+    ).toHaveLength(0);
   });
 
   test('avoids credential keyword false positives such as tokenization', () => {

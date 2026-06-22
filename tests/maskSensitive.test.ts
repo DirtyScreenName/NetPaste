@@ -33,21 +33,30 @@ describe('maskSensitiveText', () => {
         'username admin secret 5 $1$abcdef',
         'password 7 0822455D0A16',
         'snmp-server community public RO',
+        'set snmp community private authorization read-only',
         'Authorization: Bearer abc.def.ghi',
-        'api_key = live_secret_value'
+        'api_key live_secret_value',
+        'crypto isakmp key 6 mySecretKey address 203.0.113.10',
+        'enable secret 5 myEnableSecret privilege 15'
       ].join('\n')
     );
 
-    expect(masked).toContain('username [masked] secret [masked]');
-    expect(masked).toContain('password [masked]');
-    expect(masked).toContain('snmp-server community [masked]');
+    expect(masked).toContain('username admin secret 5 [masked]');
+    expect(masked).toContain('password 7 [masked]');
+    expect(masked).toContain('snmp-server community [masked] RO');
+    expect(masked).toContain('set snmp community [masked] authorization read-only');
     expect(masked).toContain('Authorization: Bearer [masked]');
     expect(masked).toContain('api_key [masked]');
+    expect(masked).toContain('crypto isakmp key 6 [masked] address [masked-ipv4]');
+    expect(masked).toContain('enable secret 5 [masked] privilege 15');
     expect(masked).not.toContain('$1$abcdef');
     expect(masked).not.toContain('0822455D0A16');
-    expect(masked).not.toContain('public RO');
+    expect(masked).not.toContain('public');
+    expect(masked).not.toContain('private');
     expect(masked).not.toContain('abc.def.ghi');
     expect(masked).not.toContain('live_secret_value');
+    expect(masked).not.toContain('mySecretKey');
+    expect(masked).not.toContain('myEnableSecret');
   });
 
   test('does not mask invalid IPv4 octets or credential keyword false positives', () => {
