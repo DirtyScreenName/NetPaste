@@ -45,6 +45,18 @@ describe('applySelectedRedactions', () => {
     );
   });
 
+  test('keeps a specific label when overlapping replacements agree', () => {
+    const text = 'prefix 192.0.2.10 suffix';
+    const finding = createFinding('ipv4', 'IPv4 address', [
+      rangeFor(text, '192.0.2.10'),
+      { start: text.indexOf('192.0.2'), end: text.indexOf('192.0.2') + '192.0.2'.length }
+    ]);
+
+    expect(applySelectedRedactions(text, [finding], new Set(['ipv4']))).toBe(
+      'prefix <REDACTED:IP> suffix'
+    );
+  });
+
   test('one deduplicated finding replaces repeated equivalent occurrences', () => {
     const text = 'primary 192.0.2.10\nsecondary 192.0.2.10';
     const finding = createFinding('ipv4', 'IPv4 address', [
@@ -141,6 +153,12 @@ describe('applySelectedRedactions', () => {
     const findings = detectSensitive('', text);
     const selectedIds = new Set(findings.map((finding) => finding.id));
 
+    expect(
+      findings.some((finding) => finding.category === 'Credential or secret')
+    ).toBe(true);
+    expect(findings.some((finding) => finding.category === 'IPv4 address')).toBe(
+      true
+    );
     expect(applySelectedRedactions(text, findings, selectedIds)).toBe(
       'password 0 <REDACTED>'
     );
