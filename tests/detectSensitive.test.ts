@@ -149,6 +149,14 @@ describe('detectSensitive', () => {
     expect(credential?.redactionRanges).toHaveLength(1);
   });
 
+  test('does not create credential findings for redaction placeholders', () => {
+    const findings = detectSensitive('', 'password 0 <REDACTED:CREDENTIAL>');
+
+    expect(
+      findings.filter((finding) => finding.category === 'Credential or secret')
+    ).toHaveLength(0);
+  });
+
   test('avoids credential keyword false positives such as tokenization', () => {
     const findings = detectSensitive(
       'The parser uses tokenization before normalization.',

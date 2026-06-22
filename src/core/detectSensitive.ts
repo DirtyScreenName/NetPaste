@@ -118,6 +118,8 @@ function detectInText(text: string, source: FindingSource): RawFinding[] {
     if (isCredentialLine(line)) {
       const redactionRanges = collectCredentialValueRanges(line);
 
+      // Skip empty credential findings so already-redacted placeholders do not
+      // get re-flagged on subsequent cleaned-output detection runs.
       if (redactionRanges.length > 0) {
         findings.push({
           category: 'Credential or secret',

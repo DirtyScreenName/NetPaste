@@ -162,7 +162,10 @@ describe('applySelectedRedactions', () => {
     expect(credential).toBeDefined();
     expect(ipv4).toBeDefined();
     expect(
-      rangesOverlap(credential?.redactionRanges[0], ipv4?.redactionRanges[0])
+      credential &&
+        ipv4 &&
+        credential.redactionRanges[0].start < ipv4.redactionRanges[0].end &&
+        ipv4.redactionRanges[0].start < credential.redactionRanges[0].end
     ).toBe(true);
     expect(applySelectedRedactions(text, findings, selectedIds)).toBe(
       'password 0 <REDACTED>'
@@ -289,13 +292,6 @@ function createFinding(
     cleanedLine: 1,
     redactionRanges
   };
-}
-
-function rangesOverlap(
-  left: TextRange | undefined,
-  right: TextRange | undefined
-): boolean {
-  return Boolean(left && right && left.start < right.end && right.start < left.end);
 }
 
 function rangeFor(text: string, value: string, fromIndex = 0): TextRange {
