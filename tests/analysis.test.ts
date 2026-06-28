@@ -29,6 +29,6 @@ describe('analyzeCurrentText', () => {
 
     expect(analysis.renderedFindings).toHaveLength(5);
     expect(analysis.hiddenFindingCount).toBeGreaterThan(0);
-    expect(analysis.categoryCounts['IPv4 address']).toBeGreaterThan(5);
+    expect(analysis.categoryCounts['Private IP address']).toBeGreaterThan(5);
   });
 });
