@@ -43,12 +43,12 @@
             tool
           </p>
           <p class="lede">
-            Clean messy network CLI output before placing it in tickets, docs,
-            issues, Slack, or AI tools.
+            Clean and redact network CLI output, configs, tickets, and logs
+            before placing them in tickets, docs, issues, Slack, or AI tools.
           </p>
           <div class="trust-strip" aria-label="NetPaste principles">
             <span class="trust-pill">Local processing</span>
-            <span class="trust-pill">Selective redaction</span>
+            <span class="trust-pill">Profile-based redaction</span>
             <span class="trust-pill">Editable output</span>
             <span class="trust-pill">No accounts</span>
           </div>
@@ -61,15 +61,50 @@
         </div>
       </header>
 
+      <section class="settings-panel" aria-label="Redaction settings">
+        <div class="field-group">
+          <label for="profile-select">Redaction profile</label>
+          <select id="profile-select"></select>
+        </div>
+        <div class="field-group">
+          <label for="document-mode-select">Document mode</label>
+          <select id="document-mode-select"></select>
+        </div>
+        <div class="field-group">
+          <label for="vendor-select">Rule pack</label>
+          <select id="vendor-select"></select>
+        </div>
+        <label class="toggle-field" for="token-map-toggle">
+          <input id="token-map-toggle" type="checkbox" />
+          Stable tokens
+        </label>
+        <label class="toggle-field" for="compare-mode-toggle">
+          <input id="compare-mode-toggle" type="checkbox" />
+          Compare mode
+        </label>
+        <p id="vendor-suggestion" class="setting-note"></p>
+      </section>
+
       <section class="workspace" aria-label="CLI output cleaner">
         <div class="editor-pane">
-          <label for="raw-output">Raw CLI output</label>
+          <label id="raw-output-label" for="raw-output">Raw CLI output</label>
           <textarea
             id="raw-output"
             spellcheck="false"
             autocomplete="off"
             autocapitalize="off"
             placeholder="Paste router, switch, firewall, or terminal output here."
+          ></textarea>
+        </div>
+
+        <div id="after-pane" class="editor-pane compare-pane is-hidden">
+          <label for="after-output">After text</label>
+          <textarea
+            id="after-output"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="In Compare mode, paste the after-state output here."
           ></textarea>
         </div>
 
@@ -91,6 +126,7 @@
         </button>
         <button id="copy-text-button" type="button">Copy Text</button>
         <button id="copy-markdown-button" type="button">Copy Markdown</button>
+        <button id="prepare-ai-button" type="button">Prepare for AI</button>
         <button id="example-button" type="button">Load Example</button>
         <button id="clear-button" type="button">Clear</button>
       </section>
@@ -108,6 +144,63 @@
             </p>
           </div>
           <p id="findings-total" class="findings-total">0 findings</p>
+        </div>
+
+        <div id="safe-score" class="safe-score" aria-live="polite">
+          <strong id="safe-score-status">Ready</strong>
+          <span id="safe-score-reasons">No common sensitive patterns were detected.</span>
+        </div>
+
+        <div class="review-toolbar" aria-label="Finding review controls">
+          <button id="select-high-risk-button" type="button">Select High Risk</button>
+          <button id="select-visible-button" type="button">Select Visible</button>
+          <button id="clear-selection-button" type="button">Clear Selected</button>
+          <button id="profile-reset-button" type="button">Profile Reset</button>
+        </div>
+
+        <div class="filter-bar" aria-label="Finding filters">
+          <div class="field-group">
+            <label for="severity-filter">Severity</label>
+            <select id="severity-filter">
+              <option value="all">All</option>
+              <option value="High review priority">High review priority</option>
+              <option value="Review">Review</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="category-filter">Category</label>
+            <select id="category-filter"></select>
+          </div>
+          <div class="field-group">
+            <label for="vendor-filter">Vendor</label>
+            <select id="vendor-filter"></select>
+          </div>
+          <div class="field-group">
+            <label for="source-filter">Source</label>
+            <select id="source-filter">
+              <option value="all">All</option>
+              <option value="original">Original</option>
+              <option value="cleaned">Cleaned</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="selected-filter">Selection</label>
+            <select id="selected-filter">
+              <option value="all">All</option>
+              <option value="selected">Selected</option>
+              <option value="unselected">Unselected</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="confidence-filter">Confidence</label>
+            <select id="confidence-filter">
+              <option value="all">All</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
         </div>
 
         <div

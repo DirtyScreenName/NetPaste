@@ -170,7 +170,9 @@ describe('applySelectedRedactions', () => {
     const credential = findings.find(
       (finding) => finding.category === 'Credential or secret'
     );
-    const ipv4 = findings.find((finding) => finding.category === 'IPv4 address');
+    const ipv4 = findings.find(
+      (finding) => finding.category === 'Public IP address'
+    );
 
     expect(credential).toBeDefined();
     expect(ipv4).toBeDefined();
@@ -218,8 +220,7 @@ describe('selective redaction metadata', () => {
 
     for (const category of [
       'Hostname prompt',
-      'IPv4 address',
-      'IPv6 address',
+      'Public IP address',
       'MAC address',
       'Credential or secret',
       'Email address',
@@ -243,7 +244,9 @@ describe('selective redaction metadata', () => {
     const credential = findings.find(
       (finding) => finding.category === 'Credential or secret'
     );
-    const ipv4 = findings.find((finding) => finding.category === 'IPv4 address');
+    const ipv4 = findings.find(
+      (finding) => finding.category === 'Public IP address'
+    );
 
     expect(credential).toBeDefined();
     expect(ipv4).toBeDefined();
@@ -303,7 +306,12 @@ function createFinding(
     preview: '[masked]',
     source: 'cleaned',
     cleanedLine: 1,
-    redactionRanges
+    redactionRanges,
+    confidence: 'High',
+    reason: 'Test finding',
+    ruleId: 'test.finding',
+    vendor: 'generic-it',
+    profileAction: 'redact'
   };
 }
 
