@@ -99,6 +99,27 @@ describe('v0.2 premier redaction workflows', () => {
     ).toBe(true);
   });
 
+  test('masks every sensitive value in same-line finding previews', () => {
+    const findings = detectSensitive(
+      '',
+      ' description customer ACME circuit CKT-778899'
+    );
+    const sameLineFindings = findings.filter((finding) =>
+      [
+        'Site or customer label',
+        'Circuit ID',
+        'Config comment metadata'
+      ].includes(finding.category)
+    );
+
+    expect(sameLineFindings.length).toBeGreaterThanOrEqual(3);
+
+    for (const finding of sameLineFindings) {
+      expect(finding.preview).not.toContain('ACME');
+      expect(finding.preview).not.toContain('CKT-778899');
+    }
+  });
+
   test('uses stable token mapping across repeated equivalent findings', () => {
     const text = [
       'hostname Edge01',
@@ -183,6 +204,24 @@ describe('v0.2 premier redaction workflows', () => {
     expect(selectedIds.size).toBe(2);
   });
 
+  test('scores removed original-only high-priority secrets against cleaned output', () => {
+    const analysis = analyzeCurrentText('password 0 originalSecret', '', 200, {
+      profileId: 'public'
+    });
+
+    expect(
+      analysis.findings.some(
+        (finding) =>
+          finding.category === 'Credential or secret' &&
+          finding.source === 'original' &&
+          finding.redactionRanges.length === 0
+      )
+    ).toBe(true);
+    expect(scoreShareReadiness(analysis.findings, new Set(), 'public').status).toBe(
+      'Ready'
+    );
+  });
+
   test('supports pasted document modes without persistence or network dependencies', () => {
     const modes: Array<[DocumentModeId, string]> = [
       ['json', '{"host":"edge01","ip":"10.0.0.1","token":"secret-value"}'],
@@ -222,5 +261,22 @@ describe('v0.2 premier redaction workflows', () => {
     expect(redactedDiff).not.toContain('Edge01');
     expect(redactedDiff).not.toContain('10.0.0.1');
     expect(redactedDiff).not.toContain('10.0.0.2');
+  });
+
+  test('builds compare diffs in linear space for large pasted text', () => {
+    const beforeText = Array.from(
+      { length: 6000 },
+      (_, index) => `line ${index} old`
+    ).join('\n');
+    const afterText = Array.from(
+      { length: 6000 },
+      (_, index) => `line ${index} new`
+    ).join('\n');
+    const diff = buildUnifiedDiff(beforeText, afterText);
+
+    expect(diff).toContain('--- before');
+    expect(diff).toContain('+++ after');
+    expect(diff).toContain('-line 5999 old');
+    expect(diff).toContain('+line 5999 new');
   });
 });

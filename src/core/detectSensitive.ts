@@ -26,11 +26,13 @@ interface RawFinding {
   reason: string;
   ruleId: string;
   vendor: VendorId;
+  previewRanges: PreviewRange[];
 }
 
 interface MergedFinding extends SensitiveFinding {
   canonical: string;
   order: number;
+  previewRanges: PreviewRange[];
 }
 
 interface FindingInput {
@@ -46,6 +48,14 @@ interface FindingInput {
   reason: string;
   ruleId: string;
   vendor: VendorId;
+}
+
+interface PreviewRange extends TextRange {
+  category: SensitiveCategory;
+}
+
+interface PreviewReplacement extends TextRange {
+  label: string;
 }
 
 const MAX_PREVIEW_LENGTH = 160;
@@ -104,7 +114,14 @@ export function detectSensitive(
   ];
   const merged = mergeEquivalentFindings(rawFindings);
 
-  return merged.map(({ canonical: _canonical, order: _order, ...finding }) => finding);
+  return merged.map(
+    ({
+      canonical: _canonical,
+      order: _order,
+      previewRanges: _previewRanges,
+      ...finding
+    }) => finding
+  );
 }
 
 export function summarizeFindings(
@@ -140,20 +157,21 @@ function detectInText(
 
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
+    const lineFindings: RawFinding[] = [];
 
     if (line.length === 0) {
       lineStartOffset += 1;
       return;
     }
 
-    collectCertificateKeyFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectCloudIdentifierFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
+    collectCertificateKeyFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectCloudIdentifierFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
 
     if (isCredentialLine(line)) {
       const redactionRanges = collectCredentialValueRanges(line);
 
       if (redactionRanges.length > 0) {
-        findings.push(
+        lineFindings.push(
           buildRawFinding({
             category: 'Credential or secret',
             severity: 'High review priority',
@@ -172,22 +190,24 @@ function detectInText(
       }
     }
 
-    collectIpv4Findings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectIpv6Findings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectMacFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectEmailFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectUrlFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectHostnameFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectHostnamePromptFinding(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectInterfaceFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectVrfFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectVlanFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectAsnFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectSerialFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectCircuitFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectSiteCustomerFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
-    collectConfigCommentFindings(line, source, lineNumber, lineStartOffset, findings, vendor);
+    collectIpv4Findings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectIpv6Findings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectMacFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectEmailFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectUrlFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectHostnameFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectHostnamePromptFinding(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectInterfaceFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectVrfFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectVlanFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectAsnFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectSerialFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectCircuitFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectSiteCustomerFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectConfigCommentFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
 
+    maskLineFindingPreviews(line, lineFindings);
+    findings.push(...lineFindings);
     lineStartOffset += line.length + 1;
   });
 
@@ -871,10 +891,15 @@ function collectConfigCommentFindings(
 }
 
 function buildRawFinding(input: FindingInput): RawFinding {
+  const previewRanges = input.lineRanges.map((range) => ({
+    ...range,
+    category: input.category
+  }));
+
   return {
     category: input.category,
     severity: input.severity ?? 'Review',
-    preview: buildPreview(input.line, input.category, input.lineRanges),
+    preview: buildPreview(input.line, previewRanges),
     source: input.source,
     line: input.lineNumber,
     canonical: input.canonical,
@@ -886,8 +911,17 @@ function buildRawFinding(input: FindingInput): RawFinding {
     confidence: input.confidence ?? 'Medium',
     reason: input.reason,
     ruleId: input.ruleId,
-    vendor: input.vendor
+    vendor: input.vendor,
+    previewRanges
   };
+}
+
+function maskLineFindingPreviews(line: string, findings: RawFinding[]): void {
+  const linePreviewRanges = findings.flatMap((finding) => finding.previewRanges);
+
+  for (const finding of findings) {
+    finding.preview = buildPreview(line, linePreviewRanges);
+  }
 }
 
 function getCleanedRedactionRanges(
@@ -1014,6 +1048,7 @@ function mergeEquivalentFindings(rawFindings: RawFinding[]): MergedFinding[] {
         ruleId: rawFinding.ruleId,
         vendor: rawFinding.vendor,
         profileAction: 'review',
+        previewRanges: rawFinding.previewRanges,
         canonical: rawFinding.canonical,
         order
       });
@@ -1218,15 +1253,14 @@ function canonicalizeLine(line: string): string {
 
 function buildPreview(
   line: string,
-  category: SensitiveCategory,
-  lineRanges: TextRange[]
+  previewRanges: PreviewRange[]
 ): string {
   let preview = removeAnsiSequences(line).replace(
     /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,
     ''
   );
 
-  preview = replaceRangesWithPreviewLabel(preview, lineRanges, category);
+  preview = replaceRangesWithPreviewLabel(preview, previewRanges);
   preview = stripUrlPreviewSecrets(preview);
   preview = maskSensitiveText(preview).replace(/\s+/g, ' ').trim();
 
@@ -1239,22 +1273,50 @@ function buildPreview(
 
 function replaceRangesWithPreviewLabel(
   line: string,
-  lineRanges: TextRange[],
-  category: SensitiveCategory
+  previewRanges: PreviewRange[]
 ): string {
   let preview = line;
-  const label = getPreviewLabel(category);
+  const replacements = mergePreviewRanges(previewRanges);
 
-  for (const range of [...lineRanges].sort((left, right) => right.start - left.start)) {
-    const start = Math.max(0, Math.min(range.start, preview.length));
-    const end = Math.max(start, Math.min(range.end, preview.length));
+  for (const replacement of replacements.sort((left, right) => right.start - left.start)) {
+    const start = Math.max(0, Math.min(replacement.start, preview.length));
+    const end = Math.max(start, Math.min(replacement.end, preview.length));
 
     if (end > start) {
-      preview = `${preview.slice(0, start)}${label}${preview.slice(end)}`;
+      preview = `${preview.slice(0, start)}${replacement.label}${preview.slice(end)}`;
     }
   }
 
   return preview;
+}
+
+function mergePreviewRanges(previewRanges: PreviewRange[]): PreviewReplacement[] {
+  const sortedRanges = previewRanges
+    .filter((range) => range.end > range.start)
+    .sort((left, right) => left.start - right.start || left.end - right.end);
+  const replacements: PreviewReplacement[] = [];
+
+  for (const range of sortedRanges) {
+    const nextReplacement = {
+      start: range.start,
+      end: range.end,
+      label: getPreviewLabel(range.category)
+    };
+    const lastReplacement = replacements.at(-1);
+
+    if (!lastReplacement || nextReplacement.start > lastReplacement.end) {
+      replacements.push(nextReplacement);
+      continue;
+    }
+
+    lastReplacement.end = Math.max(lastReplacement.end, nextReplacement.end);
+
+    if (lastReplacement.label !== nextReplacement.label) {
+      lastReplacement.label = '[masked-value]';
+    }
+  }
+
+  return replacements;
 }
 
 function getPreviewLabel(category: SensitiveCategory): string {
