@@ -1,4 +1,10 @@
-import type { SensitiveCategory, SensitiveFinding, TextRange } from './types';
+import { applyProfileDefaults } from './profiles';
+import type {
+  RedactionProfileId,
+  SensitiveCategory,
+  SensitiveFinding,
+  TextRange
+} from './types';
 
 interface RedactionReplacement extends TextRange {
   label: string;
@@ -29,14 +35,18 @@ const CREDENTIAL_LABEL_RULES = [
 export function applySelectedRedactions(
   cleanedText: string,
   findings: SensitiveFinding[],
-  selectedIds: ReadonlySet<string>
+  selectedIds: ReadonlySet<string>,
+  replacementLabels: ReadonlyMap<string, string> = new Map()
 ): string {
   const replacements = findings
     .filter((finding) => selectedIds.has(finding.id))
     .flatMap((finding) =>
       finding.redactionRanges.map((range) => ({
         ...range,
-        label: getRedactionLabel(finding, cleanedText, range)
+        label:
+          replacementLabels.get(finding.id) ??
+          finding.replacementToken ??
+          getRedactionLabel(finding, cleanedText, range)
       }))
     );
 
@@ -44,19 +54,17 @@ export function applySelectedRedactions(
 }
 
 export function getDefaultSelectedFindingIds(
-  findings: SensitiveFinding[]
+  findings: SensitiveFinding[],
+  profileId: RedactionProfileId = 'custom-session'
 ): Set<string> {
-  return new Set(
-    findings
-      .filter((finding) => isDefaultSelectedFinding(finding))
-      .map((finding) => finding.id)
-  );
+  return applyProfileDefaults(findings, profileId);
 }
 
 export function reconcileSelectedFindingIds(
   findings: SensitiveFinding[],
   selectedIds: ReadonlySet<string>,
-  previouslyKnownIds: ReadonlySet<string>
+  previouslyKnownIds: ReadonlySet<string>,
+  profileId: RedactionProfileId = 'custom-session'
 ): Set<string> {
   const currentIds = new Set(findings.map((finding) => finding.id));
   const nextSelectedIds = new Set(
@@ -66,7 +74,7 @@ export function reconcileSelectedFindingIds(
   for (const finding of findings) {
     if (
       !previouslyKnownIds.has(finding.id) &&
-      isDefaultSelectedFinding(finding)
+      isDefaultSelectedFinding(finding, profileId)
     ) {
       nextSelectedIds.add(finding.id);
     }
@@ -83,9 +91,14 @@ export function isRedactableFinding(finding: SensitiveFinding): boolean {
   return finding.redactionRanges.length > 0;
 }
 
-function isDefaultSelectedFinding(finding: SensitiveFinding): boolean {
+function isDefaultSelectedFinding(
+  finding: SensitiveFinding,
+  profileId: RedactionProfileId
+): boolean {
   return (
-    finding.severity === 'High review priority' && isRedactableFinding(finding)
+    isRedactableFinding(finding) &&
+    (finding.profileAction === 'redact' ||
+      applyProfileDefaults([finding], profileId).has(finding.id))
   );
 }
 
@@ -175,6 +188,8 @@ function getCategoryRedactionLabel(category: SensitiveCategory): string {
   switch (category) {
     case 'IPv4 address':
     case 'IPv6 address':
+    case 'Public IP address':
+    case 'Private IP address':
       return '<REDACTED:IP>';
     case 'MAC address':
       return '<REDACTED:MAC>';
@@ -182,6 +197,29 @@ function getCategoryRedactionLabel(category: SensitiveCategory): string {
       return '<REDACTED:EMAIL>';
     case 'URL':
       return '<REDACTED:URL>';
+    case 'Hostname prompt':
+    case 'Hostname':
+      return '<REDACTED:HOST>';
+    case 'Interface name':
+      return '<REDACTED:IFACE>';
+    case 'VRF name':
+      return '<REDACTED:VRF>';
+    case 'VLAN identifier':
+      return '<REDACTED:VLAN>';
+    case 'BGP ASN':
+      return '<REDACTED:ASN>';
+    case 'Serial number':
+      return '<REDACTED:SERIAL>';
+    case 'Circuit ID':
+      return '<REDACTED:CIRCUIT>';
+    case 'Site or customer label':
+      return '<REDACTED:SITE>';
+    case 'Certificate or key material':
+      return '<REDACTED:KEY-MATERIAL>';
+    case 'Cloud identifier':
+      return '<REDACTED:CLOUD>';
+    case 'Config comment metadata':
+      return '<REDACTED:COMMENT>';
     default:
       return GENERIC_REDACTION_LABEL;
   }

@@ -12,10 +12,10 @@ describe('detectSensitive', () => {
       'valid 192.0.2.10 invalid 999.1.1.1'
     );
 
-    expect(findings.filter((finding) => finding.category === 'IPv4 address'))
+    expect(findings.filter((finding) => finding.category === 'Public IP address'))
       .toHaveLength(1);
     expect(findings[0]).toMatchObject({
-      category: 'IPv4 address',
+      category: 'Public IP address',
       source: 'both',
       originalLine: 1,
       cleanedLine: 1
@@ -28,7 +28,7 @@ describe('detectSensitive', () => {
     expect(findings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          category: 'IPv6 address',
+          category: 'Public IP address',
           source: 'original',
           originalLine: 1
         })
@@ -203,7 +203,9 @@ describe('detectSensitive', () => {
       'Router01#\nip address 192.0.2.5 255.255.255.0'
     );
 
-    const ipv4 = findings.find((finding) => finding.category === 'IPv4 address');
+    const ipv4 = findings.find(
+      (finding) => finding.category === 'Public IP address'
+    );
     const prompt = findings.find(
       (finding) => finding.category === 'Hostname prompt'
     );
@@ -225,7 +227,9 @@ describe('detectSensitive', () => {
       '\n\nip address 198.51.100.10 255.255.255.0',
       'ip address 198.51.100.10 255.255.255.0'
     );
-    const ipv4 = findings.find((finding) => finding.category === 'IPv4 address');
+    const ipv4 = findings.find(
+      (finding) => finding.category === 'Public IP address'
+    );
 
     expect(ipv4).toMatchObject({
       source: 'both',
@@ -256,6 +260,6 @@ describe('detectSensitive', () => {
     const summary = summarizeFindings(findings);
 
     expect(rendered).toHaveLength(10);
-    expect(summary['IPv4 address']).toBeGreaterThan(10);
+    expect(summary['Public IP address']).toBeGreaterThan(10);
   });
 });

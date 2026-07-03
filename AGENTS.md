@@ -2,19 +2,24 @@
 
 ## Project mission
 
-NetPaste helps network engineers clean messy CLI output locally before sharing it
-in tickets, documentation, GitHub issues, Slack, or AI tools. It may include
-minimal Protocols & Packets attribution as its parent brand.
+NetPaste helps network engineers and IT professionals clean and redact CLI
+output, configs, tickets, and logs locally before sharing them in tickets,
+documentation, GitHub issues, Slack, or AI tools. It may include minimal
+Protocols & Packets attribution as its parent brand.
 
-## Frozen v0.1 scope
+## v0.2 scope
 
-Build and maintain a small static web app with:
+Build and maintain a static browser-local web app with:
 
 - Raw CLI output textarea.
 - Cleaned output textarea.
 - Clean Output, Copy Text, Copy Markdown, Load Example, and Clear actions.
-- Sensitive-data findings with category, line number, severity, source, and
-  masked previews for high-priority credential-like findings.
+- Local redaction profiles, vendor rule packs, document modes, Safe Share Score,
+  bulk finding review controls, filters, stable token mapping, Compare mode, and
+  a Prepare for AI Markdown copy workflow.
+- Sensitive-data findings with category, line number, severity, source,
+  confidence, reason, rule ID, vendor, profile action, optional replacement
+  token, and masked previews.
 - Local-only privacy messaging and a privacy page.
 
 ## Build, test, and verification commands
@@ -43,11 +48,12 @@ npm run preview
 ## Prohibited features
 
 Do not add accounts, authentication, payments, backend services, cloud storage,
-analytics, AI features, automatic network discovery, configuration uploads,
-vendor APIs, automatic redaction, PDF reports, browser-extension packaging,
-Firefox or Safari support, multiple themes, internationalization, user
-preference persistence, complex branding, a blog, or a database. Minimal
-Protocols & Packets attribution is permitted.
+analytics, AI service calls, automatic network discovery, configuration uploads,
+vendor APIs, file import, PDF parsing, browser-extension packaging, Firefox or
+Safari support, multiple themes, internationalization, user preference
+persistence, complex branding, a blog, or a database. Profile defaults may
+select local redactions, and users must be able to review and change those
+selections. Minimal Protocols & Packets attribution is permitted.
 
 ## Definition of done
 
@@ -56,7 +62,8 @@ Protocols & Packets attribution is permitted.
 - `npm run typecheck` succeeds.
 - `npm run build` succeeds.
 - The production preview works locally.
-- Core cleaning behavior is covered by tests.
+- Core cleaning, detection, profile, scoring, token, compare, and copy behavior
+  is covered by tests.
 - Sensitive findings show category and line number.
 - Copy Text and Copy Markdown use the current cleaned-output textarea contents.
 - The app makes no intentional application network requests during normal use.

@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## 0.2.0 - 2026-06-28
+
+- Added local redaction profiles for Public, Vendor TAC, Internal Ticket, AI
+  Prompt, and Custom Session workflows.
+- Added local vendor-aware rule packs for Cisco, Juniper, Arista, Palo Alto,
+  Fortinet, Ciena, Linux, and Generic IT.
+- Expanded sensitive-data findings with confidence, reason, rule ID, vendor,
+  profile action, and optional stable replacement tokens.
+- Added topology-sensitive categories including public/private IPs, hostnames,
+  interfaces, VRFs, VLANs, ASNs, serial numbers, circuit IDs, site/customer
+  labels, certificate/key material, cloud identifiers, and config comment
+  metadata.
+- Added Safe Share Score, finding filters, bulk review controls, document
+  modes, Compare mode, and the local Prepare for AI Markdown workflow.
 - Replace removed sensitive values with redaction labels so cleaned network
   configs preserve structure.
 - Added live per-finding redaction checkboxes for the editable cleaned output.
