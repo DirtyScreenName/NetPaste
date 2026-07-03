@@ -58,6 +58,10 @@ interface PreviewReplacement extends TextRange {
   label: string;
 }
 
+interface KeyMaterialBlockState {
+  active: boolean;
+}
+
 const MAX_PREVIEW_LENGTH = 160;
 
 const IPV4_CANDIDATE_PATTERN =
@@ -154,6 +158,7 @@ function detectInText(
   const lines = normalizedText.split('\n');
   const findings: RawFinding[] = [];
   let lineStartOffset = 0;
+  const keyMaterialBlockState: KeyMaterialBlockState = { active: false };
 
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
@@ -164,7 +169,15 @@ function detectInText(
       return;
     }
 
-    collectCertificateKeyFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
+    collectCertificateKeyFindings(
+      line,
+      source,
+      lineNumber,
+      lineStartOffset,
+      lineFindings,
+      vendor,
+      keyMaterialBlockState
+    );
     collectCloudIdentifierFindings(line, source, lineNumber, lineStartOffset, lineFindings, vendor);
 
     if (isCredentialLine(line)) {
@@ -766,14 +779,34 @@ function collectCertificateKeyFindings(
   lineNumber: number,
   lineStartOffset: number,
   findings: RawFinding[],
-  vendor: VendorId
+  vendor: VendorId,
+  blockState: KeyMaterialBlockState
 ): void {
-  const pattern =
-    /-----BEGIN [A-Z ]*(?:PRIVATE KEY|CERTIFICATE)-----|-----END [A-Z ]*(?:PRIVATE KEY|CERTIFICATE)-----/g;
+  const beginPattern = /-----BEGIN [A-Z ]*(?:PRIVATE KEY|CERTIFICATE)-----/g;
+  const endPattern = /-----END [A-Z ]*(?:PRIVATE KEY|CERTIFICATE)-----/g;
+  const markerRanges = [
+    ...collectPatternRanges(line, beginPattern),
+    ...collectPatternRanges(line, endPattern)
+  ].sort((left, right) => left.start - right.start || left.end - right.end);
+  const wasActive = blockState.active;
+  const beginsBlock = markerRanges.some((range) =>
+    line.slice(range.start, range.end).startsWith('-----BEGIN ')
+  );
+  const endsBlock = markerRanges.some((range) =>
+    line.slice(range.start, range.end).startsWith('-----END ')
+  );
+  const lineRanges =
+    markerRanges.length > 0
+      ? markerRanges
+      : wasActive
+        ? collectNonWhitespaceLineRange(line)
+        : [];
 
-  for (const match of line.matchAll(pattern)) {
-    const value = match[0];
+  if (beginsBlock) {
+    blockState.active = true;
+  }
 
+  if (lineRanges.length > 0) {
     findings.push(
       buildRawFinding({
         category: 'Certificate or key material',
@@ -782,20 +815,39 @@ function collectCertificateKeyFindings(
         source,
         lineNumber,
         lineStartOffset,
-        canonical: `key-material:${value.toLowerCase()}`,
-        lineRanges: [
-          {
-            start: match.index ?? 0,
-            end: (match.index ?? 0) + value.length
-          }
-        ],
+        canonical: `key-material:${canonicalizeLine(line)}`,
+        lineRanges,
         confidence: 'High',
-        reason: 'Certificate or private-key marker matched.',
-        ruleId: 'secret.key-material',
+        reason: 'Certificate or private-key material matched inside a PEM block.',
+        ruleId: 'secret.key-material-block',
         vendor
       })
     );
   }
+
+  if (endsBlock) {
+    blockState.active = false;
+  }
+}
+
+function collectPatternRanges(line: string, pattern: RegExp): TextRange[] {
+  pattern.lastIndex = 0;
+
+  return [...line.matchAll(pattern)].map((match) => ({
+    start: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length
+  }));
+}
+
+function collectNonWhitespaceLineRange(line: string): TextRange[] {
+  const match = line.match(/\S(?:.*\S)?/);
+
+  if (!match) {
+    return [];
+  }
+
+  const start = match.index ?? 0;
+  return [{ start, end: start + match[0].length }];
 }
 
 function collectCloudIdentifierFindings(

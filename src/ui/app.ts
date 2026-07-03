@@ -26,6 +26,7 @@ import {
   type VendorSelection,
   sensitiveCategories
 } from '../core/types';
+import { type AppSurfaceOptions, resolveAppSurface } from './surface';
 
 const EXAMPLE_OUTPUT = `Switch01#show running-config interface GigabitEthernet1/0/10
 \x1b[32mBuilding configuration...\x1b[0m
@@ -118,7 +119,19 @@ interface FindingFilters {
 
 type RedactionChangeHandler = (findingId: string, selected: boolean) => void;
 
-export function initNetPasteApp(rootDocument: Document): void {
+interface ViewportScrollPosition {
+  left: number;
+  top: number;
+}
+
+export function initNetPasteApp(
+  rootDocument: Document,
+  options: AppSurfaceOptions = {}
+): void {
+  const surfaceConfig = resolveAppSurface(options);
+  rootDocument.documentElement.dataset.netpasteSurface = surfaceConfig.surface;
+  rootDocument.body.classList.add(surfaceConfig.rootClassName);
+
   const elements = getAppElements(rootDocument);
   populateSelects(elements, rootDocument);
 
@@ -173,6 +186,8 @@ export function initNetPasteApp(rootDocument: Document): void {
   };
 
   const handleRedactionChange: RedactionChangeHandler = (findingId, selected) => {
+    const scrollPosition = getViewportScrollPosition(rootDocument);
+
     if (selected) {
       selectedFindingIds.add(findingId);
     } else {
@@ -186,6 +201,7 @@ export function initNetPasteApp(rootDocument: Document): void {
         selectedFindingIds.size
       )} selected.`
     );
+    restoreFindingInteraction(elements, rootDocument, findingId, scrollPosition);
   };
 
   elements.cleanButton.addEventListener('click', () => {
@@ -408,6 +424,7 @@ export function initNetPasteApp(rootDocument: Document): void {
   });
 
   renderCurrentState();
+  setStatus(elements, surfaceConfig.initialStatus);
 }
 
 export function getPlainTextCopyPayload(currentCleanedOutput: string): string {
@@ -811,6 +828,7 @@ function createRedactionControl(
 
   const checkbox = rootDocument.createElement('input');
   checkbox.type = 'checkbox';
+  checkbox.dataset.findingId = finding.id;
   checkbox.checked =
     isRedactableFinding(finding) && selectedFindingIds.has(finding.id);
   checkbox.disabled = !isRedactableFinding(finding);
@@ -827,6 +845,56 @@ function createRedactionControl(
   label.append(checkbox, checkbox.disabled ? 'Original only' : 'Redact');
 
   return label;
+}
+
+function getViewportScrollPosition(
+  rootDocument: Document
+): ViewportScrollPosition | undefined {
+  const view = rootDocument.defaultView;
+
+  if (!view) {
+    return undefined;
+  }
+
+  return {
+    left: view.scrollX,
+    top: view.scrollY
+  };
+}
+
+function restoreFindingInteraction(
+  elements: AppElements,
+  rootDocument: Document,
+  findingId: string,
+  scrollPosition: ViewportScrollPosition | undefined
+): void {
+  restoreViewportScroll(rootDocument, scrollPosition);
+  findRedactionCheckbox(elements.findingsList, findingId)?.focus({
+    preventScroll: true
+  });
+  rootDocument.defaultView?.requestAnimationFrame(() => {
+    restoreViewportScroll(rootDocument, scrollPosition);
+  });
+}
+
+function restoreViewportScroll(
+  rootDocument: Document,
+  scrollPosition: ViewportScrollPosition | undefined
+): void {
+  if (!scrollPosition) {
+    return;
+  }
+
+  rootDocument.defaultView?.scrollTo(scrollPosition.left, scrollPosition.top);
+}
+
+function findRedactionCheckbox(
+  list: HTMLOListElement,
+  findingId: string
+): HTMLInputElement | undefined {
+  return [...list.querySelectorAll<HTMLInputElement>('input[data-finding-id]')].find(
+    (checkbox) => checkbox.dataset.findingId === findingId
+  );
 }
 
 function formatLocation(finding: SensitiveFinding): string {

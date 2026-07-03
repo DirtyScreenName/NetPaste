@@ -2,7 +2,14 @@
 
 ## Unreleased
 
-- No unreleased changes.
+- Added a Chromium Manifest V3 side-panel extension build and package workflow.
+- Refreshed the web and extension interface with a shared Fluent-inspired
+  technical workbench design.
+- Added extension privacy, permission, and store-listing documentation.
+- Hardened PEM certificate/private-key block redaction so selected key-material
+  findings cover marker and body lines.
+- Added extension package validation for expected files, Manifest V3 shape,
+  minimal permissions, and CSP before creating the review ZIP.
 
 ## 0.2.0 - 2026-06-28
 

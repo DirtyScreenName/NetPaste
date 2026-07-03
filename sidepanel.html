@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NetPaste Side Panel</title>
+  </head>
+  <body class="extension-surface">
+    <main class="app-shell">
+      <nav class="site-nav" aria-label="NetPaste side panel">
+        <div class="brand-mark" aria-label="NetPaste">
+          <span class="brand-symbol" aria-hidden="true">NP</span>
+          <span>
+            <strong>NetPaste</strong>
+            <small>Protocols &amp; Packets local redaction tool</small>
+          </span>
+        </div>
+      </nav>
+
+      <header class="masthead">
+        <div>
+          <p class="eyebrow">Chromium side panel</p>
+          <h1>NetPaste</h1>
+          <p class="lede">
+            Paste network text, clean it locally, review sensitive-data
+            findings, and copy the edited result.
+          </p>
+          <div class="trust-strip" aria-label="NetPaste principles">
+            <span class="trust-pill">Local</span>
+            <span class="trust-pill">Paste-only</span>
+            <span class="trust-pill">No page access</span>
+          </div>
+        </div>
+        <div class="masthead-panel" aria-label="NetPaste workflow">
+          <span>Paste</span>
+          <span>Clean</span>
+          <span>Review</span>
+          <span>Copy</span>
+        </div>
+      </header>
+
+      <section class="settings-panel" aria-label="Redaction settings">
+        <div class="field-group">
+          <label for="profile-select">Profile</label>
+          <select id="profile-select"></select>
+        </div>
+        <div class="field-group">
+          <label for="document-mode-select">Mode</label>
+          <select id="document-mode-select"></select>
+        </div>
+        <div class="field-group">
+          <label for="vendor-select">Rule pack</label>
+          <select id="vendor-select"></select>
+        </div>
+        <label class="toggle-field" for="token-map-toggle">
+          <input id="token-map-toggle" type="checkbox" />
+          Stable tokens
+        </label>
+        <label class="toggle-field" for="compare-mode-toggle">
+          <input id="compare-mode-toggle" type="checkbox" />
+          Compare
+        </label>
+        <p id="vendor-suggestion" class="setting-note"></p>
+      </section>
+
+      <section class="workspace" aria-label="CLI output cleaner">
+        <div class="editor-pane">
+          <label id="raw-output-label" for="raw-output">Raw text</label>
+          <textarea
+            id="raw-output"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="Paste router, switch, firewall, ticket, or terminal output here."
+          ></textarea>
+        </div>
+
+        <div id="after-pane" class="editor-pane compare-pane is-hidden">
+          <label for="after-output">After text</label>
+          <textarea
+            id="after-output"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="In Compare mode, paste the after-state output here."
+          ></textarea>
+        </div>
+
+        <div class="editor-pane">
+          <label for="cleaned-output">Cleaned output</label>
+          <textarea
+            id="cleaned-output"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="Cleaned output appears here and remains editable."
+          ></textarea>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Output actions">
+        <button id="clean-button" class="primary-action" type="button">
+          Clean Output
+        </button>
+        <button id="copy-text-button" type="button">Copy Text</button>
+        <button id="copy-markdown-button" type="button">Copy Markdown</button>
+        <button id="prepare-ai-button" type="button">Prepare for AI</button>
+        <button id="example-button" type="button">Example</button>
+        <button id="clear-button" type="button">Clear</button>
+      </section>
+
+      <p id="status-message" class="status-message" aria-live="polite"></p>
+
+      <section class="findings-region" aria-labelledby="findings-title">
+        <div class="findings-header">
+          <div>
+            <h2 id="findings-title">Sensitive-data findings</h2>
+            <p class="disclaimer">
+              Findings are pattern-based review aids. Review output before
+              sharing.
+            </p>
+          </div>
+          <p id="findings-total" class="findings-total">0 findings</p>
+        </div>
+
+        <div id="safe-score" class="safe-score" aria-live="polite">
+          <strong id="safe-score-status">Ready</strong>
+          <span id="safe-score-reasons">No common sensitive patterns were detected.</span>
+        </div>
+
+        <div class="review-toolbar" aria-label="Finding review controls">
+          <button id="select-high-risk-button" type="button">High Risk</button>
+          <button id="select-visible-button" type="button">Visible</button>
+          <button id="clear-selection-button" type="button">Clear Selected</button>
+          <button id="profile-reset-button" type="button">Profile Reset</button>
+        </div>
+
+        <div class="filter-bar" aria-label="Finding filters">
+          <div class="field-group">
+            <label for="severity-filter">Severity</label>
+            <select id="severity-filter">
+              <option value="all">All</option>
+              <option value="High review priority">High review priority</option>
+              <option value="Review">Review</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="category-filter">Category</label>
+            <select id="category-filter"></select>
+          </div>
+          <div class="field-group">
+            <label for="vendor-filter">Vendor</label>
+            <select id="vendor-filter"></select>
+          </div>
+          <div class="field-group">
+            <label for="source-filter">Source</label>
+            <select id="source-filter">
+              <option value="all">All</option>
+              <option value="original">Original</option>
+              <option value="cleaned">Cleaned</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="selected-filter">Selection</label>
+            <select id="selected-filter">
+              <option value="all">All</option>
+              <option value="selected">Selected</option>
+              <option value="unselected">Unselected</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="confidence-filter">Confidence</label>
+            <select id="confidence-filter">
+              <option value="all">All</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+        </div>
+
+        <div
+          id="category-counts"
+          class="category-counts"
+          aria-label="Findings by category"
+        ></div>
+        <ol id="findings-list" class="findings-list"></ol>
+      </section>
+    </main>
+
+    <script type="module" src="/src/extension/sidepanel.ts"></script>
+  </body>
+</html>

@@ -7,9 +7,10 @@ output, configs, tickets, and logs locally before sharing them in tickets,
 documentation, GitHub issues, Slack, or AI tools. It may include minimal
 Protocols & Packets attribution as its parent brand.
 
-## v0.2 scope
+## v0.3 scope
 
-Build and maintain a static browser-local web app with:
+Build and maintain a static browser-local web app and a Chromium Manifest V3
+side-panel extension with:
 
 - Raw CLI output textarea.
 - Cleaned output textarea.
@@ -21,6 +22,8 @@ Build and maintain a static browser-local web app with:
   confidence, reason, rule ID, vendor, profile action, optional replacement
   token, and masked previews.
 - Local-only privacy messaging and a privacy page.
+- Store-ready Chromium extension packaging that is paste-only, side-panel based,
+  and limited to the `sidePanel` permission.
 
 ## Build, test, and verification commands
 
@@ -31,6 +34,8 @@ npm install
 npm test
 npm run typecheck
 npm run build
+npm run build:extension
+npm run package:extension
 npm run preview
 ```
 
@@ -49,11 +54,13 @@ npm run preview
 
 Do not add accounts, authentication, payments, backend services, cloud storage,
 analytics, AI service calls, automatic network discovery, configuration uploads,
-vendor APIs, file import, PDF parsing, browser-extension packaging, Firefox or
-Safari support, multiple themes, internationalization, user preference
-persistence, complex branding, a blog, or a database. Profile defaults may
-select local redactions, and users must be able to review and change those
-selections. Minimal Protocols & Packets attribution is permitted.
+vendor APIs, file import, PDF parsing, webpage-reading extension features,
+Firefox or Safari support, multiple themes, internationalization, user
+preference persistence, complex branding, a blog, or a database. Chromium
+extension packaging is permitted only for the paste-only local side-panel
+surface. Profile defaults may select local redactions, and users must be able to
+review and change those selections. Minimal Protocols & Packets attribution is
+permitted.
 
 ## Definition of done
 
@@ -61,12 +68,16 @@ selections. Minimal Protocols & Packets attribution is permitted.
 - `npm test` succeeds.
 - `npm run typecheck` succeeds.
 - `npm run build` succeeds.
+- `npm run build:extension` succeeds.
+- `npm run package:extension` succeeds.
 - The production preview works locally.
+- The Chromium extension loads unpacked from `dist-extension/`.
 - Core cleaning, detection, profile, scoring, token, compare, and copy behavior
   is covered by tests.
 - Sensitive findings show category and line number.
 - Copy Text and Copy Markdown use the current cleaned-output textarea contents.
 - The app makes no intentional application network requests during normal use.
+- The extension requests no host permissions and does not read webpages.
 - No pasted content is intentionally persisted.
 - The privacy page exists and accurately describes local-only behavior.
 - `Prompts/Start.txt` remains unchanged.
