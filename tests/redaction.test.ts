@@ -204,6 +204,37 @@ describe('applySelectedRedactions', () => {
     expect(output).not.toContain('$1$abcdef');
     expect(output).not.toContain('private');
   });
+
+  test('redacts complete PEM key-material blocks by default', () => {
+    const text = [
+      'crypto pki certificate chain TEST',
+      '-----BEGIN PRIVATE KEY-----',
+      'MIIEvQIBADANBgkqhkiG9w0BAQEFAASC',
+      'Proc-Type: 4,ENCRYPTED',
+      '-----END PRIVATE KEY-----',
+      'interface Loopback0'
+    ].join('\n');
+    const findings = detectSensitive('', text);
+    const selectedIds = getDefaultSelectedFindingIds(findings);
+    const output = applySelectedRedactions(text, findings, selectedIds);
+
+    expect(output.split('\n')).toHaveLength(text.split('\n').length);
+    expect(output).toContain('<REDACTED:KEY-MATERIAL>');
+    expect(output).not.toContain('-----BEGIN PRIVATE KEY-----');
+    expect(output).not.toContain('MIIEvQIBADANBgkqhkiG9w0BAQEFAASC');
+    expect(output).not.toContain('Proc-Type: 4,ENCRYPTED');
+    expect(output).not.toContain('-----END PRIVATE KEY-----');
+    expect(
+      findings
+        .filter((finding) => finding.category === 'Certificate or key material')
+        .every(
+          (finding) =>
+            !finding.preview.includes('MIIEvQ') &&
+            !finding.preview.includes('PRIVATE KEY') &&
+            finding.redactionRanges.length > 0
+        )
+    ).toBe(true);
+  });
 });
 
 describe('selective redaction metadata', () => {
@@ -214,6 +245,9 @@ describe('selective redaction metadata', () => {
       'ipv6 address 2001:db8::1/64',
       'mac-address aabb.ccdd.eeff',
       'username admin secret 5 $1$abcdef',
+      '-----BEGIN CERTIFICATE-----',
+      'MIICertBodyLine',
+      '-----END CERTIFICATE-----',
       'contact noc@example.com https://example.test/path'
     ].join('\n');
     const findings = detectSensitive('', cleanedText);
@@ -223,6 +257,7 @@ describe('selective redaction metadata', () => {
       'Public IP address',
       'MAC address',
       'Credential or secret',
+      'Certificate or key material',
       'Email address',
       'URL'
     ] as const) {

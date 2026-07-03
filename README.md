@@ -28,6 +28,8 @@ AI tools.
 - Builds a local before/after text diff in Compare mode.
 - Copies cleaned output as plain text, as a Markdown code block, or through the
   local Prepare for AI Markdown workflow.
+- Ships a Chromium Manifest V3 side-panel build that reuses the same local
+  engine for Chrome and Edge-compatible browsers.
 
 ## What it does not do
 
@@ -36,8 +38,8 @@ AI tools.
 - It does not call AI services. Prepare for AI is a local redaction profile and
   Markdown copy workflow.
 - It does not include accounts, analytics, telemetry, storage, vendor APIs,
-  external network APIs, file import, PDF parsing, or browser-extension
-  packaging.
+  external network APIs, file import, PDF parsing, or webpage-reading browser
+  extension features.
 
 ## Privacy model
 
@@ -56,11 +58,29 @@ npm run dev
 
 Open the printed local URL, normally `http://127.0.0.1:5173/`.
 
+## Chromium extension
+
+NetPaste can also be built as a paste-only Chromium side panel. The extension
+requests only the `sidePanel` permission, does not request host permissions, and
+does not read webpages, inject content scripts, use browser storage, or call
+external network APIs.
+
+```powershell
+npm run build:extension
+npm run package:extension
+```
+
+Load the generated `dist-extension/` directory through Chromium's extension
+management page for local testing. The packaged ZIP is written under
+`release/`.
+
 ## Tests and checks
 
 ```powershell
 npm test
 npm run typecheck
+npm run build:extension
+npm run package:extension
 ```
 
 ## Production build
@@ -88,8 +108,10 @@ Sensitive-data detection is pattern based. It can miss confidential values and
 can flag harmless text. Profiles and scores are review aids, not a guarantee.
 Always review the cleaned output before sharing.
 
-## Deferred Chrome-extension phase
+## Design model
 
-The core cleaning, detection, and Markdown functions are structured under
-`src/core/` so they can be reused by a future Manifest V3 Chrome extension.
-Chrome-extension packaging is intentionally outside v0.2 scope.
+NetPaste uses a Fluent-inspired technical workbench design: clear hierarchy,
+compact command surfaces, visible focus states, accessible contrast, and
+predictable review controls. Behavioral design is limited to ethical clarity:
+make the useful path obvious, reduce steps to the first cleaned output, and use
+Safe Share Score as review feedback rather than telemetry or gamification.

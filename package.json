@@ -1,6 +1,6 @@
 {
   "name": "netpaste",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Clean messy network CLI output locally before sharing it.",
@@ -10,9 +10,12 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
+    "build:extension": "node scripts/generate-extension-icons.mjs && tsc --noEmit && vite build --config vite.extension.config.ts",
+    "package:extension": "npm run build:extension && node scripts/package-extension.mjs",
     "preview": "vite preview --host 127.0.0.1"
   },
   "devDependencies": {
+    "@types/node": "^24.10.2",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.9"
