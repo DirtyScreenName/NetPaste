@@ -2,20 +2,39 @@
 
 ## Summary
 
-Clean and redact network CLI output, configs, tickets, and logs locally before
-sharing.
+Clean CLI output and redact sensitive network configurations, logs, and tickets
+locally before sharing.
 
 ## Description
 
-NetPaste is a Protocols & Packets tool for network engineers and IT
-professionals. Paste text into the Chromium side panel, clean terminal artifacts,
-review sensitive-data findings, apply local redactions, and copy readable text
+NetPaste is a local network configuration redaction and CLI output cleaner for
+network engineers, security teams, support engineers, and IT professionals.
+Paste text into the Chromium side panel, remove terminal artifacts, review
+sensitive-looking findings, apply selective redactions, and copy readable text
 or Markdown.
+
+Use NetPaste before sharing router and switch configurations, firewall output,
+troubleshooting logs, support tickets, change records, GitHub issues, or prompts.
+Vendor-aware rule packs support common Cisco, Juniper, Arista, Palo Alto,
+Fortinet, Ciena, Linux, and generic IT patterns.
+
+Key capabilities:
+
+- Clean ANSI sequences, pagination markers, control artifacts, and excess space.
+- Find credentials, keys, IP addresses, hostnames, interfaces, VLANs, VRFs,
+  serial numbers, circuit IDs, cloud identifiers, email addresses, and URLs.
+- Select individual redactions or apply purpose-built sharing profiles.
+- Preserve useful configuration structure with consistent replacement tokens.
+- Compare before-and-after text and prepare sanitized Markdown locally.
+- Review a Safe Share Score before copying the editable result.
 
 NetPaste is local-first. It does not read webpages, does not request host
 permissions, does not upload pasted content, and does not use analytics,
 telemetry, accounts, browser storage, cookies, backend services, or external
 network APIs.
+
+NetPaste is also available as a web app at
+https://netpaste.protocolsandpackets.com/.
 
 ## Permission rationale
 

@@ -5,21 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="NetPaste cleans messy network CLI output locally before sharing."
+      content="Clean and redact network CLI output, configurations, logs, and tickets locally with NetPaste. No uploads, accounts, analytics, or webpage access."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0b2730" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Protocols &amp; Packets" />
+    <meta property="og:title" content="NetPaste - Local Network Configuration Redaction" />
+    <meta
+      property="og:description"
+      content="Clean CLI output and redact sensitive-looking network data locally before sharing it."
+    />
+    <meta property="og:url" content="https://netpaste.protocolsandpackets.com/" />
+    <meta
+      property="og:image"
+      content="https://netpaste.protocolsandpackets.com/netpaste-social-card.png"
+    />
+    <meta property="og:image:width" content="1400" />
+    <meta property="og:image:height" content="560" />
+    <meta property="og:image:alt" content="NetPaste local network configuration redaction workbench" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NetPaste - Local Network Configuration Redaction" />
+    <meta
+      name="twitter:description"
+      content="Clean CLI output and redact sensitive-looking network data locally before sharing it."
+    />
+    <meta
+      name="twitter:image"
+      content="https://netpaste.protocolsandpackets.com/netpaste-social-card.png"
     />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; upgrade-insecure-requests"
     />
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" href="netpaste-p-mark.png" />
     <link rel="canonical" href="https://netpaste.protocolsandpackets.com/" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "NetPaste",
+        "description": "A local-first workbench for cleaning and redacting network CLI output, configurations, logs, and technical tickets before sharing.",
+        "url": "https://netpaste.protocolsandpackets.com/",
+        "downloadUrl": "https://chromewebstore.google.com/detail/netpaste/dnnfmemabkibfjnonhlbimfmpbpnehdo",
+        "applicationCategory": "SecurityApplication",
+        "applicationSubCategory": "Network configuration redaction",
+        "operatingSystem": "Any modern web browser; Chrome 114 or later for the extension",
+        "browserRequirements": "Requires JavaScript. Chromium extension requires Chrome 114 or later.",
+        "softwareVersion": "0.3.0",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Protocols & Packets",
+          "url": "https://protocolsandpackets.com/"
+        },
+        "featureList": [
+          "Local CLI output cleaning",
+          "Sensitive-looking data detection",
+          "Selective configuration redaction",
+          "Vendor-aware network rule packs",
+          "Safe Share Score",
+          "Markdown export"
+        ]
+      }
+    </script>
     <title>NetPaste — Clean CLI Output | Protocols & Packets</title>
   </head>
   <body>
     <main class="app-shell">
       <nav class="site-nav" aria-label="Primary navigation">
         <a class="brand-mark" href="https://protocolsandpackets.com/" aria-label="Protocols & Packets home">
-          <span class="brand-symbol" aria-hidden="true">P&P</span>
+          <img class="brand-symbol" src="netpaste-p-mark.png" alt="" />
           <span>
             <strong>Protocols &amp; Packets</strong>
             <small>Network tools for accountable operations</small>
@@ -29,13 +90,14 @@
           <a href="https://protocolsandpackets.com/">Home</a>
           <a href="https://protocolsandpackets.com/observatory.html">Observatory</a>
           <a href="https://app.protocolsandpackets.com/">ChangeGuard</a>
+          <a href="https://chromewebstore.google.com/detail/netpaste/dnnfmemabkibfjnonhlbimfmpbpnehdo">Extension</a>
           <a href="privacy.html">Privacy</a>
         </div>
       </nav>
 
       <header class="masthead">
         <div>
-          <p class="eyebrow">Processed locally in your browser</p>
+          <p class="eyebrow"><span aria-hidden="true"></span> Local redaction workbench</p>
           <h1>NetPaste</h1>
           <p class="tool-attribution">
             A
@@ -46,6 +108,10 @@
             Clean and redact network CLI output, configs, tickets, and logs
             before placing them in tickets, docs, issues, Slack, or AI tools.
           </p>
+          <a
+            class="extension-cta"
+            href="https://chromewebstore.google.com/detail/netpaste/dnnfmemabkibfjnonhlbimfmpbpnehdo"
+          >Get the Chromium extension</a>
           <div class="trust-strip" aria-label="NetPaste principles">
             <span class="trust-pill">Local processing</span>
             <span class="trust-pill">Profile-based redaction</span>
@@ -54,10 +120,10 @@
           </div>
         </div>
         <div class="masthead-panel" aria-label="NetPaste workflow">
-          <span>01 Paste</span>
-          <span>02 Clean</span>
-          <span>03 Review</span>
-          <span>04 Copy</span>
+          <span><b>01</b> Paste</span>
+          <span><b>02</b> Clean</span>
+          <span><b>03</b> Review</span>
+          <span><b>04</b> Copy</span>
         </div>
       </header>
 
