@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://netpaste.protocolsandpackets.com/sitemap.xml
