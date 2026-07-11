@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added website search metadata, social sharing metadata, software-application
+  structured data, crawler guidance, and a direct Chrome Web Store install path.
+- Refined the Chrome Web Store description around network configuration
+  redaction, CLI output cleaning, privacy, and supported workflows.
+- Added the approved Protocols & Packets P mark and packet-forge visual system
+  across the web app, Chromium extension, store assets, and social previews.
 - Added a Chromium Manifest V3 side-panel extension build and package workflow.
 - Refreshed the web and extension interface with a shared Fluent-inspired
   technical workbench design.
