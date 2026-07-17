@@ -170,6 +170,15 @@ button:focus-visible {
   font-size: 18px;
 }
 
+.guide-hero .guide-slogan {
+  margin-bottom: 10px;
+  color: #94ecff;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .guide-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .guide-button {
