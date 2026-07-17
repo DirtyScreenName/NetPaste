@@ -198,6 +198,25 @@ export function initNetPasteApp(
     );
   };
 
+  const revalidateSendActions = (): boolean => {
+    if (!policyHasBlockingRules(activeSessionPolicy)) {
+      return true;
+    }
+
+    sendBlockedByPolicy = hasUnhandledPolicyBlock(
+      analyzeSourceText(selectedFindingIds).findings,
+      selectedFindingIds
+    );
+    updateCopyButtons(elements, sendBlockedByPolicy);
+    if (sendBlockedByPolicy) {
+      setStatus(
+        elements,
+        'A blocking session-policy finding is unhandled. Copy actions remain unavailable.'
+      );
+    }
+    return !sendBlockedByPolicy;
+  };
+
   const renderCurrentState = (analysis = analyzeSourceText()): AnalysisResult => {
     elements.cleanedOutput.value = applySelectedRedactions(
       cleanedSourceText,
@@ -254,6 +273,10 @@ export function initNetPasteApp(
 
   elements.cleanedOutput.addEventListener('input', () => {
     cleanedSourceText = elements.cleanedOutput.value;
+    if (policyHasBlockingRules(activeSessionPolicy)) {
+      sendBlockedByPolicy = true;
+      updateCopyButtons(elements, true);
+    }
     window.clearTimeout(editDetectionTimer);
     editDetectionTimer = window.setTimeout(() => {
       const previousKnownFindingIds = knownFindingIds;
@@ -427,6 +450,7 @@ export function initNetPasteApp(
   });
 
   elements.copyTextButton.addEventListener('click', () => {
+    if (!revalidateSendActions()) return;
     copyToClipboard(
       getPlainTextCopyPayload(elements.cleanedOutput.value),
       rootDocument
@@ -443,6 +467,7 @@ export function initNetPasteApp(
   });
 
   elements.copyMarkdownButton.addEventListener('click', () => {
+    if (!revalidateSendActions()) return;
     copyToClipboard(
       getMarkdownCopyPayload(elements.cleanedOutput.value),
       rootDocument
@@ -459,6 +484,7 @@ export function initNetPasteApp(
   });
 
   elements.prepareAiButton.addEventListener('click', () => {
+    if (!revalidateSendActions()) return;
     profileId = 'ai-prompt';
     useTokenMapping = true;
     elements.profileSelect.value = profileId;
@@ -1249,6 +1275,10 @@ function hasUnhandledPolicyBlock(
       finding.redactionRanges.length > 0 &&
       !selectedIds.has(finding.id)
   );
+}
+
+export function policyHasBlockingRules(policy?: CompiledPolicy): boolean {
+  return policy?.rules.some((rule) => rule.action === 'block') ?? false;
 }
 
 async function copyToClipboard(

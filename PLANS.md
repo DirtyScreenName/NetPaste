@@ -20,6 +20,7 @@ The work is successful when users can complete real troubleshooting tasks with s
 - [x] (2026-07-17 20:02Z) Received authorization for Milestones 0 and 1 as NetPaste v0.4.0; Safe Prompt remains a separate approval gate.
 - [x] (2026-07-17 20:07Z) Implemented Milestone 0 baseline evidence and the current, v0.4.0, and proposed AI Shield data-flow threat model; final unpacked-extension smoke proof remains part of release verification.
 - [x] (2026-07-17 21:00Z) Implemented and validated Milestone 1 without new extension permissions. The operator confirmed the unpacked extension loaded and opened; the exact packaged side-panel artifact passed policy, redaction, receipt, copy-blocking, scroll-preservation, narrow-layout, and console checks.
+- [x] (2026-07-17 21:18Z) Remediated the final pull-request review findings: findings now retain private rule identity during deduplication, unmatched built-in ranges remain reviewable, and edited output immediately suspends and revalidates send actions when an active session policy can block.
 - [ ] Implement and validate Milestone 2, a Safe Prompt prototype for one supported AI site, behind explicit permission and privacy gates.
 - [ ] Run the one-week Safe Prompt user validation and record the measured promotion or kill decision.
 - [ ] Implement Milestone 3, local redaction receipts and evidence-package export, only if its validation gate is approved.
@@ -100,7 +101,7 @@ The work is successful when users can complete real troubleshooting tasks with s
 
 Milestones 0 and 1 are complete. Milestone 1 provides a shared browser-local policy compiler and evaluator, memory-only dictionary, IPv4 CIDR, and bounded regular-expression rules, deterministic rule priority, allow/review/replace/alias/block actions, stable aliases, copy blocking for unhandled policy findings, and non-secret SHA-256 receipts. The existing web and paste-only extension surfaces share the implementation and the extension still requests only `sidePanel`.
 
-Automated validation, web production-preview QA, package validation, operator-confirmed unpacked loading, and exact packaged-side-panel QA pass. Two responsive defects discovered during visible testing were corrected and reverified. Milestone 2 remains unauthorized and no AI-site host access, content script, persistence, backend, telemetry, or external API was added. The business questions about repeated Safe Prompt use and willingness to pay therefore remain unresolved and must not be inferred from Milestone 1 completion.
+Automated validation, web production-preview QA, package validation, operator-confirmed unpacked loading, and exact packaged-side-panel QA pass. Two responsive defects discovered during visible testing and three release-review correctness findings were corrected and reverified. Milestone 2 remains unauthorized and no AI-site host access, content script, persistence, backend, telemetry, or external API was added. The business questions about repeated Safe Prompt use and willingness to pay therefore remain unresolved and must not be inferred from Milestone 1 completion.
 
 ## Context and Orientation
 
@@ -260,7 +261,7 @@ Keep concise proof here as the work proceeds. A successful baseline currently re
 Milestone 1 evidence captured on 2026-07-17:
 
     Test Files  11 passed (11)
-    Tests       97 passed (97)
+    Tests       101 passed (101)
     npm run typecheck          exits 0
     npm run build              exits 0
     npm run build:extension    exits 0
@@ -274,7 +275,7 @@ Milestone 1 evidence captured on 2026-07-17:
 
 The production-preview fixture proved a repeated protected site name maps to one stable alias, a blocking credential disables the send-ready copy actions when unselected, reselecting it restores a typed secret alias, manual cleaned-output edits are copied verbatim, and the copied receipt contains policy metadata and hashes but not protected values or mappings. Privacy and return links resolved from the generated build, navigating away cleared the session policy and text, the browser console had no warnings or errors, and the corrected open policy panel had no horizontal overflow at mobile width.
 
-The operator confirmed `dist-extension/` loaded unpacked and the toolbar opened the side panel. Automated interaction against the exact generated `dist-extension/sidepanel.html` artifact repeated the alias, block, edited-copy, and receipt checks; rejected an unsafe regular expression without echoing it; preserved finding-review scroll position at 1911 CSS pixels; reported no console warnings or errors; and, after the responsive correction, reported `scrollWidth` equal to `viewportWidth` at a 360-pixel browser viewport with no visible overflow. Targeted implementation search found no active `fetch`, `XMLHttpRequest`, `sendBeacon`, cookie, browser-storage, unsafe HTML, eval, or remote-code use. `Prompts/Start.txt` retained SHA-256 `2CD9007B84B7C19672211E80375E13E4EE80F2324AE9F7F3E6F46B632602048F`.
+The operator confirmed `dist-extension/` loaded unpacked and the toolbar opened the side panel. Automated interaction against the exact generated `dist-extension/sidepanel.html` artifact repeated the alias, block, edited-copy, and receipt checks; rejected an unsafe regular expression without echoing it; preserved finding-review scroll position at 1911 CSS pixels; reported no console warnings or errors; and, after the responsive correction, reported `scrollWidth` equal to `viewportWidth` at a 360-pixel browser viewport with no visible overflow. Final pull-request review added regressions proving that same-value matches from different rules retain their own actions, partially overridden built-in findings retain unmatched ranges, original-only built-in findings remain visible, and edited output suspends send actions while an active blocking policy is re-evaluated. Targeted implementation search found no active `fetch`, `XMLHttpRequest`, `sendBeacon`, cookie, browser-storage, unsafe HTML, eval, or remote-code use. `Prompts/Start.txt` retained SHA-256 `2CD9007B84B7C19672211E80375E13E4EE80F2324AE9F7F3E6F46B632602048F`.
 
 The first Safe Prompt acceptance fixture should use only reserved examples:
 
@@ -406,4 +407,4 @@ Use standard browser cryptography for SHA-256 where available. Introduce no runt
 
 The intended commercial sequence, contingent on validation, is Individual Pro for local custom policies and evidence packages, Team for shared signed policies and review records, Enterprise for private deployment and integrations, paid specialist policy packs for network, firewall and virtual private network, cloud and development, operational technology, security, and managed-service-provider use cases, and professional services for customer-specific rule development. Product packaging and payment implementation are not authorized by this ExecPlan; the sequence exists to connect technical gates to buyer value.
 
-Revision note (2026-07-17): Recorded the decision to keep AI Shield in the shared repository while releasing it as a separate extension product. Recorded authorization and completion evidence for Milestones 0 and 1 as NetPaste v0.4.0 and preserved Milestone 2 as a separate permission and privacy approval gate.
+Revision note (2026-07-17): Recorded the decision to keep AI Shield in the shared repository while releasing it as a separate extension product. Recorded authorization and completion evidence for Milestones 0 and 1 as NetPaste v0.4.0, added final pull-request review remediation evidence, and preserved Milestone 2 as a separate permission and privacy approval gate.

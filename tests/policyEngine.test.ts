@@ -228,6 +228,26 @@ describe('v0.4 deterministic policy engine', () => {
     expect(findings[0].preview).not.toContain('SITE-ALPHA');
   });
 
+  test('keeps findings from different rules distinct when canonical values match', () => {
+    const policy = compilePolicy(
+      createSessionPolicy([
+        buildRule(
+          { kind: 'regex', pattern: '^SITE', flags: '' },
+          { id: 'session-rule-allow', action: 'allow', priority: 200 }
+        ),
+        buildRule(
+          { kind: 'regex', pattern: 'SITE', flags: '' },
+          { id: 'session-rule-block', action: 'block', priority: 100 }
+        )
+      ])
+    );
+    const findings = evaluatePolicy('', 'SITE primary\nbackup SITE', policy).findings;
+
+    expect(findings).toHaveLength(2);
+    expect(findings.map((finding) => finding.policyAction)).toEqual(['block', 'allow']);
+    expect(new Set(findings.map((finding) => finding.id)).size).toBe(2);
+  });
+
   test('versions each session-policy revision independently', () => {
     const first = compilePolicy(createSessionPolicy([], 1));
     const second = compilePolicy(createSessionPolicy([], 2));
@@ -277,6 +297,61 @@ describe('v0.4 deterministic policy engine', () => {
     expect(analysis.policyId).toBe(
       'netpaste-builtins+netpaste-custom-session'
     );
+  });
+
+  test('preserves built-in ranges not covered by a custom policy match', () => {
+    const policy = compilePolicy(
+      createSessionPolicy([
+        buildRule(
+          { kind: 'regex', pattern: '10\\.31\\.24\\.2$', flags: '' },
+          {
+            id: 'session-rule-first-ip',
+            category: 'Private IP address',
+            action: 'block'
+          }
+        )
+      ])
+    );
+    const text = 'primary 10.31.24.2\nbackup 10.31.24.2 peer';
+    const analysis = analyzeCurrentText('', text, 200, {
+      policy,
+      profileId: 'custom-session'
+    });
+    const matching = analysis.findings.filter(
+      (finding) => finding.category === 'Private IP address'
+    );
+
+    expect(matching).toHaveLength(2);
+    expect(matching.find((finding) => finding.policyAction === 'block')?.redactionRanges)
+      .toEqual([{ start: 8, end: 18 }]);
+    expect(matching.find((finding) => finding.policyAction === undefined)?.redactionRanges)
+      .toEqual([{ start: 26, end: 36 }]);
+  });
+
+  test('preserves original-only built-in findings when a custom policy is active', () => {
+    const policy = compilePolicy(
+      createSessionPolicy([
+        buildRule(
+          { kind: 'dictionary', values: ['SITE-ALPHA'], caseSensitive: true },
+          { id: 'session-rule-site', action: 'review' }
+        )
+      ])
+    );
+    const analysis = analyzeCurrentText(
+      'source address 10.31.24.2',
+      'cleaned output without an address',
+      200,
+      { policy, profileId: 'custom-session' }
+    );
+
+    expect(
+      analysis.findings.some(
+        (finding) =>
+          finding.category === 'Private IP address' &&
+          finding.source === 'original' &&
+          finding.redactionRanges.length === 0
+      )
+    ).toBe(true);
   });
 
   test('applies replace and alias actions through the existing redaction pipeline', () => {

@@ -24,6 +24,7 @@ const IPV4_PATTERN = /(^|[^\d.])((?:\d{1,3}\.){3}\d{1,3})(?![\d.])/g;
 
 interface RawPolicyFinding {
   canonical: string;
+  ruleIdentity: string;
   source: Exclude<FindingSource, 'both'>;
   lineNumber: number;
   redactionRanges: TextRange[];
@@ -96,10 +97,17 @@ export function mergePolicyFindings(
       finding.redactionRanges.map((range) => rangeKey(range))
     )
   );
-  const remainingBuiltIns = builtInFindings.filter(
-    (finding) =>
-      !finding.redactionRanges.some((range) => policyRangeKeys.has(rangeKey(range)))
-  );
+  const remainingBuiltIns = builtInFindings.flatMap((finding) => {
+    if (finding.redactionRanges.length === 0) {
+      return [finding];
+    }
+    const remainingRanges = finding.redactionRanges.filter(
+      (range) => !policyRangeKeys.has(rangeKey(range))
+    );
+    return remainingRanges.length > 0
+      ? [{ ...finding, redactionRanges: remainingRanges }]
+      : [];
+  });
 
   return [...policyFindings, ...remainingBuiltIns].sort((left, right) => {
     if (left.severity !== right.severity) {
@@ -160,6 +168,7 @@ function evaluateText(
       const redactionRanges = source === 'cleaned' ? [absoluteRange] : [];
       findings.push({
         canonical: match.canonical,
+        ruleIdentity: rule.id,
         source,
         lineNumber: index + 1,
         redactionRanges,
@@ -299,7 +308,7 @@ function mergeEquivalentFindings(rawFindings: RawPolicyFinding[]): SensitiveFind
   const merged = new Map<string, MergedPolicyFinding>();
 
   for (const raw of rawFindings) {
-    const key = `${raw.finding.ruleId}\u0000${raw.canonical}`;
+    const key = `${raw.ruleIdentity}\u0000${raw.canonical}`;
     const existing = merged.get(key);
     if (!existing) {
       merged.set(key, { ...raw.finding, canonical: raw.canonical, priority: raw.priority });
