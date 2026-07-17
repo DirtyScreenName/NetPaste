@@ -4,8 +4,10 @@
 
 - Added operator guides for Cisco configuration redaction, CLI-output cleanup,
   and preparing network logs for AI tools.
-- Added a self-hosted, captioned product workflow video and updated the sitemap
-  with the new discovery pages and video metadata.
+- Added three self-hosted walkthroughs recorded from the live NetPaste
+  workbench: Cisco redaction, terminal-output cleanup, and Prepare for AI.
+- Updated each operator guide and the sitemap with workflow-specific video
+  metadata and text transcripts.
 - Added a compact homepage guide index linking the workbench to the new
   destination-specific workflows.
 

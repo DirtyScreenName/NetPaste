@@ -14,11 +14,25 @@
     <loc>https://netpaste.protocolsandpackets.com/redact-cisco-config.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://netpaste.protocolsandpackets.com/netpaste-social-card.png</video:thumbnail_loc>
+      <video:title>Redact a Cisco configuration with NetPaste</video:title>
+      <video:description>Choose a Cisco rule pack, apply a Vendor TAC profile, select redactions, and inspect structure-preserving output in the live NetPaste workbench.</video:description>
+      <video:content_loc>https://netpaste.protocolsandpackets.com/media/netpaste-cisco-redaction-walkthrough.mp4</video:content_loc>
+      <video:duration>17</video:duration>
+    </video:video>
   </url>
   <url>
     <loc>https://netpaste.protocolsandpackets.com/sanitize-cli-output.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://netpaste.protocolsandpackets.com/netpaste-social-card.png</video:thumbnail_loc>
+      <video:title>Clean terminal and CLI output with NetPaste</video:title>
+      <video:description>Paste a terminal capture, remove ANSI, pagination, backspace, and spacing artifacts, then inspect the readable result in the live NetPaste workbench.</video:description>
+      <video:content_loc>https://netpaste.protocolsandpackets.com/media/netpaste-cli-cleanup-walkthrough.mp4</video:content_loc>
+      <video:duration>13</video:duration>
+    </video:video>
   </url>
   <url>
     <loc>https://netpaste.protocolsandpackets.com/prepare-network-logs-for-ai.html</loc>
@@ -26,10 +40,10 @@
     <priority>0.8</priority>
     <video:video>
       <video:thumbnail_loc>https://netpaste.protocolsandpackets.com/netpaste-social-card.png</video:thumbnail_loc>
-      <video:title>NetPaste local network redaction workflow</video:title>
-      <video:description>Paste network text, clean terminal artifacts, review sensitive-looking findings, apply local redactions, and copy the editable result.</video:description>
-      <video:content_loc>https://netpaste.protocolsandpackets.com/media/netpaste-demo-0.3.1.mp4</video:content_loc>
-      <video:duration>38</video:duration>
+      <video:title>Prepare network evidence for AI with NetPaste</video:title>
+      <video:description>Select the AI Prompt profile, enable stable tokens, apply recommended redactions, and copy reviewed Markdown from the live NetPaste workbench.</video:description>
+      <video:content_loc>https://netpaste.protocolsandpackets.com/media/netpaste-prepare-ai-walkthrough.mp4</video:content_loc>
+      <video:duration>15</video:duration>
     </video:video>
   </url>
 </urlset>

@@ -106,8 +106,9 @@ The public parent site for NetPaste is Protocols & Packets:
 
 The static build includes crawlable guides for Cisco configuration redaction,
 CLI-output cleanup, and preparing network logs for AI tools. Each guide uses
-sanitized examples, links directly to the local workbench, and embeds the
-self-hosted NetPaste workflow demo without third-party tracking.
+sanitized examples, links directly to the local workbench, and embeds its own
+self-hosted recording of the actual NetPaste workflow without third-party
+tracking.
 
 ## Limitations
 
