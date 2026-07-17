@@ -99,6 +99,19 @@ export function getProfileActionForFinding(
   finding: SensitiveFinding,
   profileId: RedactionProfileId
 ): ProfileAction {
+  if (finding.policyAction) {
+    switch (finding.policyAction) {
+      case 'allow':
+        return 'allow';
+      case 'review':
+        return 'review';
+      case 'replace':
+      case 'alias':
+      case 'block':
+        return 'redact';
+    }
+  }
+
   if (finding.severity === 'High review priority') {
     return 'redact';
   }

@@ -1,12 +1,10 @@
-import {
-  detectSensitive,
-  getRenderedFindings,
-  summarizeFindings
-} from './detectSensitive';
+import { getRenderedFindings, summarizeFindings } from './detectSensitive';
 import { getProfileActionForFinding, annotateFindingsForProfile, applyProfileDefaults } from './profiles';
 import { scoreShareReadiness } from './shareScore';
 import { suggestVendor } from './rulePacks';
 import { applyTokenMapToFindings, buildTokenMap } from './tokenMap';
+import { compiledBuiltInPolicy } from './policy/builtins';
+import { evaluatePolicy, mergePolicyFindings } from './policy/evaluate';
 import type { AnalysisOptions, AnalysisResult } from './types';
 
 export function analyzeCurrentText(
@@ -22,10 +20,23 @@ export function analyzeCurrentText(
     options.vendorId && options.vendorId !== 'auto'
       ? options.vendorId
       : vendorSuggestion.vendor;
-  const detectedFindings = detectSensitive(rawText, currentCleanedText, {
-    ...options,
-    vendorId: activeVendor
-  });
+  const builtInEvaluation = evaluatePolicy(
+    rawText,
+    currentCleanedText,
+    compiledBuiltInPolicy,
+    {
+      ...options,
+      policy: undefined,
+      vendorId: activeVendor
+    }
+  );
+  const builtInFindings = builtInEvaluation.findings;
+  const policyEvaluation = options.policy
+    ? evaluatePolicy(rawText, currentCleanedText, options.policy)
+    : undefined;
+  const detectedFindings = policyEvaluation
+    ? mergePolicyFindings(builtInFindings, policyEvaluation.findings)
+    : builtInFindings;
   const profiledFindings = annotateFindingsForProfile(
     detectedFindings.map((finding) => ({
       ...finding,
@@ -34,7 +45,9 @@ export function analyzeCurrentText(
     profileId
   );
   const tokenMap = buildTokenMap(profiledFindings, {
-    enabled: options.useTokenMapping
+    enabled:
+      options.useTokenMapping ||
+      profiledFindings.some((finding) => finding.policyAction === 'alias')
   });
   const findings = applyTokenMapToFindings(profiledFindings, tokenMap);
   const renderedFindings = getRenderedFindings(findings, renderedLimit);
@@ -50,6 +63,13 @@ export function analyzeCurrentText(
     documentMode,
     vendorSuggestion,
     activeVendor,
-    shareScore: scoreShareReadiness(findings, selectedIds, profileId)
+    shareScore: scoreShareReadiness(findings, selectedIds, profileId),
+    policyId: policyEvaluation
+      ? `${builtInEvaluation.policyId}+${policyEvaluation.policyId}`
+      : builtInEvaluation.policyId,
+    policyVersion: policyEvaluation
+      ? `${builtInEvaluation.policyVersion}+${policyEvaluation.policyVersion}`
+      : builtInEvaluation.policyVersion,
+    unsupportedContent: policyEvaluation?.unsupportedContent ?? []
   };
 }

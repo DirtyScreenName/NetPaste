@@ -11,6 +11,23 @@
 - Added a compact homepage guide index linking the workbench to the new
   destination-specific workflows.
 
+## 0.4.0 - 2026-07-17
+
+- Added a versioned, deterministic custom session-policy engine with protected
+  dictionaries, IPv4 CIDR ranges, and bounded regular-expression rules.
+- Routed all existing built-in finding categories through the versioned policy
+  evaluator while preserving profile, vendor, preview, and redaction behavior.
+- Added local allow, review, typed replacement, stable alias, and block actions
+  with deterministic priority handling and structure-preserving output.
+- Added a session-policy builder to the web workbench and Chromium side panel;
+  rules, protected values, and alias mappings remain memory-only.
+- Added non-secret JSON redaction receipts containing policy metadata, local
+  SHA-256 input/output hashes, classification counts, and review status.
+- Hardened custom-rule validation, masked previews, overlapping-rule behavior,
+  blocking copy controls, and metadata leakage tests.
+- Preserved the paste-only extension permission boundary: `sidePanel` remains
+  the only requested permission.
+
 ## 0.3.1 - 2026-07-17
 
 - Added website search metadata, social sharing metadata, software-application

@@ -52,7 +52,7 @@
         "applicationSubCategory": "Network configuration redaction",
         "operatingSystem": "Any modern web browser; Chrome 114 or later for the extension",
         "browserRequirements": "Requires JavaScript. Chromium extension requires Chrome 114 or later.",
-        "softwareVersion": "0.3.1",
+        "softwareVersion": "0.4.0",
         "isAccessibleForFree": true,
         "offers": {
           "@type": "Offer",
@@ -162,6 +162,69 @@
         <p id="vendor-suggestion" class="setting-note"></p>
       </section>
 
+      <details class="session-policy-panel">
+        <summary>
+          <span>Custom session policy</span>
+          <small>Memory only; cleared when this page closes</small>
+        </summary>
+        <div class="policy-builder" aria-label="Custom session policy rule builder">
+          <div class="field-group">
+            <label for="custom-rule-kind">Matcher</label>
+            <select id="custom-rule-kind">
+              <option value="dictionary">Protected dictionary</option>
+              <option value="cidr">IPv4 CIDR</option>
+              <option value="regex">Regular expression</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="custom-rule-category">Category</label>
+            <select id="custom-rule-category"></select>
+          </div>
+          <div class="field-group">
+            <label for="custom-rule-action">Action</label>
+            <select id="custom-rule-action">
+              <option value="replace">Typed replacement</option>
+              <option value="alias">Stable alias</option>
+              <option value="block">Block until handled</option>
+              <option value="review">Review</option>
+              <option value="allow">Allow</option>
+            </select>
+          </div>
+          <div class="field-group policy-value-field">
+            <label for="custom-rule-value">Protected values or pattern</label>
+            <input
+              id="custom-rule-value"
+              type="text"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="off"
+              placeholder="Comma-separated protected values"
+            />
+          </div>
+          <div class="field-group">
+            <label for="custom-rule-replacement">Replacement label</label>
+            <input
+              id="custom-rule-replacement"
+              type="text"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="off"
+              placeholder="Optional, for example <SITE>"
+            />
+          </div>
+          <label class="toggle-field" for="custom-rule-case-sensitive">
+            <input id="custom-rule-case-sensitive" type="checkbox" />
+            Case sensitive
+          </label>
+          <div class="policy-actions">
+            <button id="add-custom-rule-button" type="button">Add Rule</button>
+            <button id="clear-custom-rules-button" type="button">Clear Session Rules</button>
+          </div>
+        </div>
+        <p id="custom-policy-status" class="setting-note" aria-live="polite">No custom session rules.</p>
+        <ul id="custom-rule-list" class="custom-rule-list"></ul>
+      </details>
+
       <section class="workspace" aria-label="CLI output cleaner">
         <div class="editor-pane">
           <label id="raw-output-label" for="raw-output">Raw CLI output</label>
@@ -204,6 +267,7 @@
         <button id="copy-text-button" type="button">Copy Text</button>
         <button id="copy-markdown-button" type="button">Copy Markdown</button>
         <button id="prepare-ai-button" type="button">Prepare for AI</button>
+        <button id="copy-receipt-button" type="button">Copy Receipt</button>
         <button id="example-button" type="button">Load Example</button>
         <button id="clear-button" type="button">Clear</button>
       </section>

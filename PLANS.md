@@ -19,7 +19,7 @@ The work is successful when users can complete real troubleshooting tasks with s
 - [x] (2026-07-17 19:49Z) Reconciled the Safe Prompt and Evidence Package sequences into one gated roadmap.
 - [x] (2026-07-17 20:02Z) Received authorization for Milestones 0 and 1 as NetPaste v0.4.0; Safe Prompt remains a separate approval gate.
 - [x] (2026-07-17 20:07Z) Implemented Milestone 0 baseline evidence and the current, v0.4.0, and proposed AI Shield data-flow threat model; final unpacked-extension smoke proof remains part of release verification.
-- [ ] Implement and validate Milestone 1, the versioned deterministic policy engine, without adding new extension permissions.
+- [ ] (2026-07-17 20:35Z) Milestone 1 implementation, automated validation, web production-preview QA, and extension packaging are complete; final unpacked side-panel interaction proof awaits the operator because browser automation cannot access `chrome://extensions`.
 - [ ] Implement and validate Milestone 2, a Safe Prompt prototype for one supported AI site, behind explicit permission and privacy gates.
 - [ ] Run the one-week Safe Prompt user validation and record the measured promotion or kill decision.
 - [ ] Implement Milestone 3, local redaction receipts and evidence-package export, only if its validation gate is approved.
@@ -44,6 +44,15 @@ The work is successful when users can complete real troubleshooting tasks with s
 
 - Observation: The authorized baseline is healthy before policy-engine changes.
   Evidence: Node `v24.4.1`, npm `11.9.0`, 10 Vitest files and 81 tests, typecheck, web build, extension build, and extension packaging all passed; npm reported zero vulnerabilities and `Prompts/Start.txt` retained SHA-256 `2CD9007B84B7C19672211E80375E13E4EE80F2324AE9F7F3E6F46B632602048F`.
+
+- Observation: A preview that masks only the current custom match can expose a second protected dictionary value on the same line.
+  Evidence: The policy evaluator now masks the union of all custom match ranges in each preview line, including lower-priority overlapping matches, and a regression test uses two sanitized protected values on one line.
+
+- Observation: The first responsive implementation placed the open policy builder beside its summary because a shared flex declaration also matched the `details` element.
+  Evidence: Production-preview measurement at a 390-pixel device width showed 47 pixels of horizontal overflow. Setting the session-policy panel to block layout removed all visible overflow; the repeated measurement reported `scrollWidth` equal to `viewportWidth` at 375 CSS pixels.
+
+- Observation: The controlled Chromium surface blocks navigation to `chrome://extensions` as a browser-security boundary.
+  Evidence: The automated unpacked-install attempt was rejected before navigation. Package validation and the web surface are complete, but a human operator must load `dist-extension/` and open the side panel for the final interaction smoke test.
 
 ## Decision Log
 
@@ -79,9 +88,19 @@ The work is successful when users can complete real troubleshooting tasks with s
   Rationale: The baseline, threat model, versioned deterministic policy engine, session-only custom regular expressions, dictionaries, CIDR ranges, stable aliases, and non-secret receipts can be built without webpage access, persistence, or new extension permissions. Safe Prompt materially changes the trust boundary and must not begin under this authorization.
   Date/Author: 2026-07-17 / User.
 
+- Decision: Accept only bounded custom regular expressions in v0.4.0.
+  Rationale: JavaScript regular expressions execute synchronously and provide no standard browser timeout. Rejecting unbounded, optional, nested, lookaround, backreference, and oversized repetition constructs gives session rules a conservative deterministic safety boundary without adding a runtime dependency.
+  Date/Author: 2026-07-17 / Codex.
+
+- Decision: Treat an unselected cleaned-output `block` finding as not send-ready.
+  Rationale: The app cannot enforce policy outside its own UI, but it can keep Copy Text, Copy Markdown, and Prepare for AI unavailable until the blocking value is selected for transformation. Receipt export remains available and reports the review as pending.
+  Date/Author: 2026-07-17 / Codex.
+
 ## Outcomes & Retrospective
 
-No implementation milestone has started. The completed outcome is a self-contained, gated roadmap that preserves the current local-only release while defining how to test the two supplied product directions. The main unresolved business question is whether users value Safe Prompt repeatedly and will create organization-specific rules. The main unresolved technical question is whether supported-site adapters can remain healthy without creating a false sense of protection. This section must be updated after every milestone with measured outcomes, remaining gaps, and lessons learned, and it must compare those results with the user-visible purpose above.
+Milestone 0 is complete except for recording the final v0.4 unpacked-extension smoke alongside Milestone 1. Milestone 1 now provides a shared browser-local policy compiler and evaluator, memory-only dictionary, IPv4 CIDR, and bounded regular-expression rules, deterministic rule priority, allow/review/replace/alias/block actions, stable aliases, copy blocking for unhandled policy findings, and non-secret SHA-256 receipts. The existing web and paste-only extension surfaces share the implementation and the extension still requests only `sidePanel`.
+
+Automated validation and web production-preview QA pass. The final release gap is operator-assisted loading of `dist-extension/`, because the controlled browser cannot open Chromium's extension-management page. Milestone 2 remains unauthorized and no AI-site host access, content script, persistence, backend, telemetry, or external API was added. The business questions about repeated Safe Prompt use and willingness to pay therefore remain unresolved and must not be inferred from Milestone 1 completion.
 
 ## Context and Orientation
 
@@ -237,6 +256,23 @@ Keep concise proof here as the work proceeds. A successful baseline currently re
     npm run build              exits 0
     npm run build:extension    exits 0
     npm run package:extension  exits 0
+
+Milestone 1 evidence captured on 2026-07-17:
+
+    Test Files  11 passed (11)
+    Tests       97 passed (97)
+    npm run typecheck          exits 0
+    npm run build              exits 0
+    npm run build:extension    exits 0
+    npm run package:extension  exits 0
+    npm audit --omit=dev       found 0 vulnerabilities
+    package                    release/netpaste-chromium-0.4.0.zip
+    manifest permissions       sidePanel
+    manifest host permissions  none
+    manifest content scripts   none
+    extension connect-src      none
+
+The production-preview fixture proved a repeated protected site name maps to one stable alias, a blocking credential disables the send-ready copy actions when unselected, reselecting it restores a typed secret alias, manual cleaned-output edits are copied verbatim, and the copied receipt contains policy metadata and hashes but not protected values or mappings. Privacy and return links resolved from the generated build, navigating away cleared the session policy and text, the browser console had no warnings or errors, and the corrected open policy panel had no horizontal overflow at mobile width. Targeted implementation search found no active `fetch`, `XMLHttpRequest`, `sendBeacon`, cookie, browser-storage, unsafe HTML, eval, or remote-code use. `Prompts/Start.txt` retained SHA-256 `2CD9007B84B7C19672211E80375E13E4EE80F2324AE9F7F3E6F46B632602048F`.
 
 The first Safe Prompt acceptance fixture should use only reserved examples:
 

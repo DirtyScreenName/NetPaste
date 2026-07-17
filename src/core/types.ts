@@ -74,6 +74,10 @@ export interface SensitiveFinding {
   vendor: VendorId;
   profileAction: ProfileAction;
   replacementToken?: string;
+  replacementLabel?: string;
+  policyAction?: import('./policy/types').PolicyAction;
+  policyId?: string;
+  policyVersion?: string;
 }
 
 export type FindingsSummary = Record<SensitiveCategory, number>;
@@ -95,6 +99,7 @@ export interface AnalysisOptions {
   vendorId?: VendorSelection;
   useTokenMapping?: boolean;
   selectedIds?: ReadonlySet<string>;
+  policy?: import('./policy/types').CompiledPolicy;
 }
 
 export interface AnalysisResult {
@@ -107,4 +112,7 @@ export interface AnalysisResult {
   vendorSuggestion: VendorSuggestion;
   activeVendor: VendorId;
   shareScore: ShareReadiness;
+  policyId: string;
+  policyVersion: string;
+  unsupportedContent: string[];
 }
