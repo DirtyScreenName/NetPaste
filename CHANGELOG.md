@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added operator guides for Cisco configuration redaction, CLI-output cleanup,
+  and preparing network logs for AI tools.
+- Added a self-hosted, captioned product workflow video and updated the sitemap
+  with the new discovery pages and video metadata.
+- Added a compact homepage guide index linking the workbench to the new
+  destination-specific workflows.
+
 ## 0.3.1 - 2026-07-17
 
 - Added website search metadata, social sharing metadata, software-application
