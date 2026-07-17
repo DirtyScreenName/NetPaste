@@ -874,6 +874,7 @@ button:disabled {
   .extension-surface .settings-panel,
   .extension-surface .filter-bar,
   .extension-surface .category-counts,
+  .extension-surface .policy-builder,
   .extension-surface .masthead-panel {
     grid-template-columns: 1fr;
   }
