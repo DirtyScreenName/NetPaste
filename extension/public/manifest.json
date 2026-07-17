@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "NetPaste",
   "short_name": "NetPaste",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Clean and redact network text locally in a Chromium side panel.",
   "minimum_chrome_version": "114",
   "icons": {
