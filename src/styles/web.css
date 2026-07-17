@@ -1,0 +1,65 @@
+.guide-strip {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.6fr);
+  gap: 18px;
+  align-items: center;
+  border: 1px solid rgba(0, 200, 240, 0.2);
+  border-radius: var(--radius);
+  background: rgba(7, 13, 19, 0.92);
+  padding: 16px;
+}
+
+.guide-strip h2 {
+  margin: 6px 0 0;
+  font-family: "Bahnschrift Condensed", "Arial Narrow", var(--sans);
+  font-size: 25px;
+  font-style: italic;
+  line-height: 1.08;
+  text-transform: uppercase;
+}
+
+.guide-strip-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guide-strip-links a {
+  min-width: 0;
+  border: 1px solid rgba(45, 95, 125, 0.62);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  background: #081019;
+  padding: 12px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.guide-strip-links a:hover {
+  border-color: var(--accent);
+  background: #0d1a24;
+}
+
+.guide-strip-links strong,
+.guide-strip-links span {
+  display: block;
+}
+
+.guide-strip-links strong {
+  margin-bottom: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.guide-strip-links span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (max-width: 980px) {
+  .guide-strip,
+  .guide-strip-links {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Redact Cisco IOS and IOS XE configurations locally before sharing them with TAC, coworkers, documentation, or AI tools." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#05080d" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="NetPaste by Protocols &amp; Packets" />
+    <meta property="og:title" content="How to Redact a Cisco Configuration Locally" />
+    <meta property="og:description" content="Remove credentials and replace sensitive network identifiers while preserving readable Cisco configuration structure." />
+    <meta property="og:url" content="https://netpaste.protocolsandpackets.com/redact-cisco-config.html" />
+    <meta property="og:image" content="https://netpaste.protocolsandpackets.com/netpaste-social-card.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; upgrade-insecure-requests" />
+    <link rel="icon" type="image/png" href="netpaste-p-mark.png" />
+    <link rel="stylesheet" href="guides.css" />
+    <link rel="canonical" href="https://netpaste.protocolsandpackets.com/redact-cisco-config.html" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to redact a Cisco configuration locally",
+        "description": "A local workflow for reviewing and redacting sensitive-looking values in Cisco IOS and IOS XE configuration text.",
+        "totalTime": "PT3M",
+        "tool": [{"@type": "HowToTool", "name": "NetPaste"}],
+        "step": [
+          {"@type": "HowToStep", "name": "Paste the configuration", "text": "Paste a Cisco configuration into NetPaste and select the Cisco rule pack."},
+          {"@type": "HowToStep", "name": "Clean and review", "text": "Clean terminal artifacts, then review credential, address, hostname, interface, VLAN, VRF, and identifier findings."},
+          {"@type": "HowToStep", "name": "Choose redactions", "text": "Keep high-priority findings selected and choose any additional topology values required by the sharing policy."},
+          {"@type": "HowToStep", "name": "Copy the result", "text": "Review the editable output and copy text or Markdown for the intended destination."}
+        ],
+        "publisher": {"@type": "Organization", "name": "Protocols & Packets", "url": "https://protocolsandpackets.com/"}
+      }
+    </script>
+    <title>Redact Cisco Configurations Locally | NetPaste</title>
+  </head>
+  <body>
+    <main class="guide-shell">
+      <nav class="guide-nav" aria-label="Primary navigation">
+        <a class="guide-brand" href="./"><img src="netpaste-p-mark.png" alt="" /><span><strong>NetPaste</strong><small>A Protocols &amp; Packets tool</small></span></a>
+        <div class="guide-nav-links"><a href="./">Open workbench</a><a href="sanitize-cli-output.html">CLI cleanup</a><a href="prepare-network-logs-for-ai.html">AI sharing</a><a href="privacy.html">Privacy</a></div>
+      </nav>
+
+      <header class="guide-hero cisco">
+        <div class="guide-hero-content">
+          <span class="guide-kicker">Cisco IOS / IOS XE workflow</span>
+          <h1>Redact the config. Preserve the evidence.</h1>
+          <p>Review credentials, addresses, hostnames, interfaces, VLANs, VRFs, and identifiers without uploading the configuration or flattening its syntax.</p>
+          <div class="guide-actions"><a class="guide-button" href="./">Redact a Cisco config</a><a class="guide-button secondary" href="https://chromewebstore.google.com/detail/netpaste/dnnfmemabkibfjnonhlbimfmpbpnehdo">Install the extension</a></div>
+        </div>
+      </header>
+
+      <div class="guide-grid">
+        <article class="guide-content">
+          <h2>Why Cisco configurations need selective redaction</h2>
+          <p>A useful configuration excerpt often contains more than passwords. Hostnames, management addresses, SNMP communities, public IP addresses, circuit labels, customer names, interface descriptions, and routing identifiers can reveal operational details. Removing entire lines makes the evidence difficult to troubleshoot; leaving every value intact can expose more than the recipient needs.</p>
+          <p>NetPaste analyzes pasted text locally and presents each sensitive-looking finding for review. Credential and key-material findings receive higher priority. Topology findings can be selected according to the destination: a public issue should usually reveal less than an internal ticket.</p>
+
+          <h2>Structure-preserving example</h2>
+          <div class="code-comparison">
+            <div class="code-panel"><b>Sanitized example input</b><pre><code>hostname BRANCH-EDGE-01
+!
+interface GigabitEthernet0/0
+ description ACME-DIA-7782
+ ip address 203.0.113.18 255.255.255.252
+!
+snmp-server community labReadOnly RO
+username operator secret 9 sanitizedHash
+router bgp 64512
+ neighbor 198.51.100.10 remote-as 64496</code></pre></div>
+            <div class="code-panel"><b>Selected redactions</b><pre><code>hostname &lt;HOSTNAME&gt;
+!
+interface &lt;INTERFACE&gt;
+ description &lt;CIRCUIT-ID&gt;
+ ip address &lt;PUBLIC-IP&gt; 255.255.255.252
+!
+snmp-server community &lt;COMMUNITY&gt; RO
+username operator secret 9 &lt;SECRET&gt;
+router bgp &lt;ASN&gt;
+ neighbor &lt;PUBLIC-IP&gt; remote-as &lt;ASN&gt;</code></pre></div>
+          </div>
+          <p class="guide-note"><strong>Important:</strong> NetPaste is a review aid, not a guarantee. Inspect the edited result before sending it to TAC, a customer, a public forum, or an AI tool.</p>
+
+          <h2>Recommended workflow</h2>
+          <ol>
+            <li>Paste the configuration into the web workbench or Chromium side panel.</li>
+            <li>Select <strong>CLI/config</strong> document mode and the <strong>Cisco</strong> rule pack.</li>
+            <li>Choose a destination profile such as Vendor TAC, Public, Internal Ticket, or AI Prompt.</li>
+            <li>Clean the text, review findings, and adjust individual Redact checkboxes.</li>
+            <li>Use stable tokens when repeated values must remain traceable across the document.</li>
+            <li>Review the editable output, then copy plain text or Markdown.</li>
+          </ol>
+
+          <h2>What remains on your device</h2>
+          <p>NetPaste application code processes pasted content in the browser. It does not upload pasted configurations, call external network APIs, create accounts, or intentionally persist the text. The Chromium extension requests only the side-panel permission and does not read the active webpage.</p>
+        </article>
+
+        <aside class="guide-aside"><span class="guide-label">Review checklist</span><ul><li><strong>Credentials:</strong> secrets, passwords, communities, tokens, and key material</li><li><strong>Addressing:</strong> public and private IP addresses</li><li><strong>Identity:</strong> hostnames, sites, customers, serials, and circuits</li><li><strong>Topology:</strong> interfaces, VLANs, VRFs, and ASNs</li><li><strong>Context:</strong> comments and descriptions that disclose purpose</li></ul></aside>
+      </div>
+
+      <section class="guide-video" aria-labelledby="demo-title"><h2 id="demo-title">See the local review workflow</h2><video controls preload="metadata" poster="netpaste-social-card.png"><source src="media/netpaste-demo-0.3.1.mp4" type="video/mp4" />Your browser does not support embedded video.</video><p class="transcript"><strong>Demo transcript:</strong> Paste network text. Clean terminal artifacts. Review sensitive-looking findings. Apply destination-aware redactions. Copy the editable result without uploading the source material.</p></section>
+
+      <section class="related-guides"><h2>Continue the workflow</h2><div class="related-list"><a href="sanitize-cli-output.html">Clean terminal and CLI output</a><a href="prepare-network-logs-for-ai.html">Prepare network logs for AI</a><a href="./">Open the NetPaste workbench</a></div></section>
+      <footer class="guide-footer"><span>NetPaste by Protocols &amp; Packets</span><span><a href="privacy.html">Privacy</a> · <a href="https://protocolsandpackets.com/">Protocols &amp; Packets</a></span></footer>
+    </main>
+  </body>
+</html>

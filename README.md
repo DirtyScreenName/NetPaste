@@ -102,6 +102,13 @@ deployment path and test the generated `dist/` build at that path.
 The public parent site for NetPaste is Protocols & Packets:
 `https://protocolsandpackets.com/`.
 
+## Operator guides
+
+The static build includes crawlable guides for Cisco configuration redaction,
+CLI-output cleanup, and preparing network logs for AI tools. Each guide uses
+sanitized examples, links directly to the local workbench, and embeds the
+self-hosted NetPaste workflow demo without third-party tracking.
+
 ## Limitations
 
 Sensitive-data detection is pattern based. It can miss confidential values and
