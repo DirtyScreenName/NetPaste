@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.1 - 2026-07-17
+
 - Added website search metadata, social sharing metadata, software-application
   structured data, crawler guidance, and a direct Chrome Web Store install path.
 - Refined the Chrome Web Store description around network configuration
