@@ -2,7 +2,8 @@
 
 NetPaste ships as a paste-only Chromium side panel for Chrome and Edge. The
 extension uses the same local cleaning, detection, redaction, Safe Share Score,
-Compare, and Prepare for AI workflow as the web app.
+Compare, custom session-policy, receipt, and Prepare for AI workflow as the web
+app.
 
 ## Local behavior
 
@@ -12,6 +13,10 @@ Compare, and Prepare for AI workflow as the web app.
 - NetPaste uses no analytics, telemetry, accounts, browser storage, cookies,
   backend services, or external network APIs.
 - Copying places content on the system clipboard at the user's request.
+- Custom rules, protected values, and alias mappings remain in memory and are
+  cleared when the side panel closes.
+- Receipt hashes are computed locally; only the requested non-secret receipt is
+  copied.
 
 ## Permissions
 

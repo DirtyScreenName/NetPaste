@@ -6,6 +6,18 @@ import { documentModes } from '../core/documentModes';
 import { toMarkdownCodeBlock } from '../core/markdown';
 import { applyProfileDefaults, getProfile, redactionProfiles } from '../core/profiles';
 import { getVendorLabel, vendorDefinitions } from '../core/rulePacks';
+import { createSessionPolicy } from '../core/policy/builtins';
+import { compilePolicy } from '../core/policy/compile';
+import {
+  createRedactionReceipt,
+  serializeRedactionReceipt
+} from '../core/policy/receipt';
+import type {
+  CompiledPolicy,
+  PolicyAction,
+  PolicyMatcher,
+  PolicyRule
+} from '../core/policy/types';
 import {
   applySelectedRedactions,
   getDefaultSelectedFindingIds,
@@ -87,6 +99,7 @@ interface AppElements {
   copyTextButton: HTMLButtonElement;
   copyMarkdownButton: HTMLButtonElement;
   prepareAiButton: HTMLButtonElement;
+  copyReceiptButton: HTMLButtonElement;
   exampleButton: HTMLButtonElement;
   clearButton: HTMLButtonElement;
   selectHighRiskButton: HTMLButtonElement;
@@ -106,6 +119,16 @@ interface AppElements {
   safeScoreReasons: HTMLElement;
   categoryCounts: HTMLElement;
   findingsList: HTMLOListElement;
+  customRuleKind: HTMLSelectElement;
+  customRuleCategory: HTMLSelectElement;
+  customRuleAction: HTMLSelectElement;
+  customRuleValue: HTMLInputElement;
+  customRuleReplacement: HTMLInputElement;
+  customRuleCaseSensitive: HTMLInputElement;
+  addCustomRuleButton: HTMLButtonElement;
+  clearCustomRulesButton: HTMLButtonElement;
+  customPolicyStatus: HTMLElement;
+  customRuleList: HTMLUListElement;
 }
 
 interface FindingFilters {
@@ -144,11 +167,18 @@ export function initNetPasteApp(
   let useTokenMapping = getProfile(profileId).useTokenMappingByDefault;
   let compareMode = false;
   let editDetectionTimer: number | undefined;
+  let sessionPolicyRules: PolicyRule[] = [];
+  let sessionPolicyRevision = 0;
+  let nextSessionRuleNumber = 1;
+  let activeSessionPolicy: CompiledPolicy | undefined;
+  let sendBlockedByPolicy = false;
 
   elements.profileSelect.value = profileId;
   elements.documentModeSelect.value = documentMode;
   elements.vendorSelect.value = vendorSelection;
   elements.tokenMapToggle.checked = useTokenMapping;
+  syncPolicyBuilderFields(elements);
+  renderSessionPolicy(elements, rootDocument, sessionPolicyRules, undefined);
 
   const analyzeSourceText = (
     selectedIds: ReadonlySet<string> = selectedFindingIds
@@ -162,9 +192,29 @@ export function initNetPasteApp(
         documentMode,
         vendorId: vendorSelection,
         useTokenMapping,
-        selectedIds
+        selectedIds,
+        policy: activeSessionPolicy
       }
     );
+  };
+
+  const revalidateSendActions = (): boolean => {
+    if (!policyHasBlockingRules(activeSessionPolicy)) {
+      return true;
+    }
+
+    sendBlockedByPolicy = hasUnhandledPolicyBlock(
+      analyzeSourceText(selectedFindingIds).findings,
+      selectedFindingIds
+    );
+    updateCopyButtons(elements, sendBlockedByPolicy);
+    if (sendBlockedByPolicy) {
+      setStatus(
+        elements,
+        'A blocking session-policy finding is unhandled. Copy actions remain unavailable.'
+      );
+    }
+    return !sendBlockedByPolicy;
   };
 
   const renderCurrentState = (analysis = analyzeSourceText()): AnalysisResult => {
@@ -175,7 +225,11 @@ export function initNetPasteApp(
     );
     renderAnalysis(elements, analysis, rootDocument, selectedFindingIds, handleRedactionChange);
     knownFindingIds = getFindingIds(analysis.findings);
-    updateCopyButtons(elements);
+    sendBlockedByPolicy = hasUnhandledPolicyBlock(
+      analysis.findings,
+      selectedFindingIds
+    );
+    updateCopyButtons(elements, sendBlockedByPolicy);
     return analysis;
   };
 
@@ -194,12 +248,14 @@ export function initNetPasteApp(
       selectedFindingIds.delete(findingId);
     }
 
-    renderCurrentState();
+    const analysis = renderCurrentState();
     setStatus(
       elements,
-      `Redaction selection updated. ${formatRedactionCount(
-        selectedFindingIds.size
-      )} selected.`
+      hasUnhandledPolicyBlock(analysis.findings, selectedFindingIds)
+        ? 'A blocking session-policy finding is unhandled. Copy actions remain unavailable.'
+        : `Redaction selection updated. ${formatRedactionCount(
+            selectedFindingIds.size
+          )} selected.`
     );
     restoreFindingInteraction(elements, rootDocument, findingId, scrollPosition);
   };
@@ -217,6 +273,10 @@ export function initNetPasteApp(
 
   elements.cleanedOutput.addEventListener('input', () => {
     cleanedSourceText = elements.cleanedOutput.value;
+    if (policyHasBlockingRules(activeSessionPolicy)) {
+      sendBlockedByPolicy = true;
+      updateCopyButtons(elements, true);
+    }
     window.clearTimeout(editDetectionTimer);
     editDetectionTimer = window.setTimeout(() => {
       const previousKnownFindingIds = knownFindingIds;
@@ -232,11 +292,11 @@ export function initNetPasteApp(
   });
 
   elements.rawOutput.addEventListener('input', () => {
-    updateCopyButtons(elements);
+    updateCopyButtons(elements, sendBlockedByPolicy);
   });
 
   elements.afterOutput.addEventListener('input', () => {
-    updateCopyButtons(elements);
+    updateCopyButtons(elements, sendBlockedByPolicy);
   });
 
   elements.profileSelect.addEventListener('change', () => {
@@ -286,6 +346,59 @@ export function initNetPasteApp(
   elements.sourceFilter.addEventListener('change', rerenderForFilters);
   elements.selectedFilter.addEventListener('change', rerenderForFilters);
   elements.confidenceFilter.addEventListener('change', rerenderForFilters);
+
+  elements.customRuleKind.addEventListener('change', () => {
+    syncPolicyBuilderFields(elements);
+  });
+
+  elements.customRuleAction.addEventListener('change', () => {
+    syncPolicyBuilderFields(elements);
+  });
+
+  elements.addCustomRuleButton.addEventListener('click', () => {
+    try {
+      const rule = buildSessionRule(elements, nextSessionRuleNumber);
+      const candidateRules = [...sessionPolicyRules, rule];
+      const candidateRevision = sessionPolicyRevision + 1;
+      const compiled = compilePolicy(
+        createSessionPolicy(candidateRules, candidateRevision)
+      );
+
+      sessionPolicyRules = candidateRules;
+      sessionPolicyRevision = candidateRevision;
+      nextSessionRuleNumber += 1;
+      activeSessionPolicy = compiled;
+      elements.customRuleValue.value = '';
+      elements.customRuleReplacement.value = '';
+      renderSessionPolicy(
+        elements,
+        rootDocument,
+        sessionPolicyRules,
+        activeSessionPolicy
+      );
+      const analysis = resetSelectionsForProfile();
+      setStatus(
+        elements,
+        `Session rule added. ${formatFindingCount(analysis.findings.length)} found.`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to add the session rule.';
+      elements.customPolicyStatus.textContent = message;
+      setStatus(elements, 'Session rule was not added. Review the policy message.');
+    }
+  });
+
+  elements.clearCustomRulesButton.addEventListener('click', () => {
+    sessionPolicyRules = [];
+    sessionPolicyRevision = 0;
+    activeSessionPolicy = undefined;
+    renderSessionPolicy(elements, rootDocument, sessionPolicyRules, undefined);
+    const analysis = resetSelectionsForProfile();
+    setStatus(
+      elements,
+      `Session rules cleared. ${formatFindingCount(analysis.findings.length)} found.`
+    );
+  });
 
   elements.selectHighRiskButton.addEventListener('click', () => {
     const analysis = analyzeSourceText();
@@ -337,6 +450,7 @@ export function initNetPasteApp(
   });
 
   elements.copyTextButton.addEventListener('click', () => {
+    if (!revalidateSendActions()) return;
     copyToClipboard(
       getPlainTextCopyPayload(elements.cleanedOutput.value),
       rootDocument
@@ -353,6 +467,7 @@ export function initNetPasteApp(
   });
 
   elements.copyMarkdownButton.addEventListener('click', () => {
+    if (!revalidateSendActions()) return;
     copyToClipboard(
       getMarkdownCopyPayload(elements.cleanedOutput.value),
       rootDocument
@@ -369,6 +484,7 @@ export function initNetPasteApp(
   });
 
   elements.prepareAiButton.addEventListener('click', () => {
+    if (!revalidateSendActions()) return;
     profileId = 'ai-prompt';
     useTokenMapping = true;
     elements.profileSelect.value = profileId;
@@ -392,6 +508,28 @@ export function initNetPasteApp(
         setStatus(
           elements,
           'Unable to copy AI prompt automatically. Select the cleaned output and copy it manually.'
+        );
+      });
+  });
+
+  elements.copyReceiptButton.addEventListener('click', () => {
+    const analysis = analyzeSourceText(selectedFindingIds);
+    createRedactionReceipt(
+      getDetectionRawText(elements, compareMode),
+      elements.cleanedOutput.value,
+      analysis,
+      selectedFindingIds
+    )
+      .then((receipt) =>
+        copyToClipboard(serializeRedactionReceipt(receipt), rootDocument)
+      )
+      .then(() => {
+        setStatus(elements, 'Non-secret redaction receipt copied as JSON.');
+      })
+      .catch(() => {
+        setStatus(
+          elements,
+          'Unable to copy the receipt automatically. Review browser clipboard permissions.'
         );
       });
   });
@@ -463,6 +601,11 @@ function getAppElements(rootDocument: Document): AppElements {
       HTMLButtonElement
     ),
     prepareAiButton: getElement(rootDocument, 'prepare-ai-button', HTMLButtonElement),
+    copyReceiptButton: getElement(
+      rootDocument,
+      'copy-receipt-button',
+      HTMLButtonElement
+    ),
     exampleButton: getElement(rootDocument, 'example-button', HTMLButtonElement),
     clearButton: getElement(rootDocument, 'clear-button', HTMLButtonElement),
     selectHighRiskButton: getElement(
@@ -501,7 +644,45 @@ function getAppElements(rootDocument: Document): AppElements {
     safeScoreStatus: getElement(rootDocument, 'safe-score-status', HTMLElement),
     safeScoreReasons: getElement(rootDocument, 'safe-score-reasons', HTMLElement),
     categoryCounts: getElement(rootDocument, 'category-counts', HTMLElement),
-    findingsList: getElement(rootDocument, 'findings-list', HTMLOListElement)
+    findingsList: getElement(rootDocument, 'findings-list', HTMLOListElement),
+    customRuleKind: getElement(rootDocument, 'custom-rule-kind', HTMLSelectElement),
+    customRuleCategory: getElement(
+      rootDocument,
+      'custom-rule-category',
+      HTMLSelectElement
+    ),
+    customRuleAction: getElement(
+      rootDocument,
+      'custom-rule-action',
+      HTMLSelectElement
+    ),
+    customRuleValue: getElement(rootDocument, 'custom-rule-value', HTMLInputElement),
+    customRuleReplacement: getElement(
+      rootDocument,
+      'custom-rule-replacement',
+      HTMLInputElement
+    ),
+    customRuleCaseSensitive: getElement(
+      rootDocument,
+      'custom-rule-case-sensitive',
+      HTMLInputElement
+    ),
+    addCustomRuleButton: getElement(
+      rootDocument,
+      'add-custom-rule-button',
+      HTMLButtonElement
+    ),
+    clearCustomRulesButton: getElement(
+      rootDocument,
+      'clear-custom-rules-button',
+      HTMLButtonElement
+    ),
+    customPolicyStatus: getElement(
+      rootDocument,
+      'custom-policy-status',
+      HTMLElement
+    ),
+    customRuleList: getElement(rootDocument, 'custom-rule-list', HTMLUListElement)
   };
 }
 
@@ -540,6 +721,11 @@ function populateSelects(elements: AppElements, rootDocument: Document): void {
       createOption(rootDocument, category, category)
     )
   );
+  elements.customRuleCategory.replaceChildren(
+    ...sensitiveCategories.map((category) =>
+      createOption(rootDocument, category, category)
+    )
+  );
   elements.vendorFilter.replaceChildren(
     createOption(rootDocument, 'all', 'All'),
     ...vendorDefinitions.map((vendor) =>
@@ -557,6 +743,113 @@ function createOption(
   option.value = value;
   option.textContent = label;
   return option;
+}
+
+function buildSessionRule(
+  elements: AppElements,
+  ruleNumber: number
+): PolicyRule {
+  const rawValue = elements.customRuleValue.value.trim();
+  if (!rawValue) {
+    throw new Error('Enter a protected value, IPv4 CIDR range, or regular expression.');
+  }
+
+  const action = elements.customRuleAction.value as PolicyAction;
+  const replacementLabel = elements.customRuleReplacement.value.trim();
+  const matcher = buildPolicyMatcher(elements, rawValue);
+
+  return {
+    id: `session-rule-${ruleNumber}`,
+    category: elements.customRuleCategory.value as SensitiveCategory,
+    description: `Session ${matcher.kind} policy rule.`,
+    matcher,
+    action,
+    severity: action === 'block' ? 'High review priority' : 'Review',
+    replacementLabel:
+      action === 'replace' && replacementLabel ? replacementLabel : undefined,
+    priority: Math.max(1, 1000 - ruleNumber)
+  };
+}
+
+function buildPolicyMatcher(
+  elements: AppElements,
+  rawValue: string
+): PolicyMatcher {
+  switch (elements.customRuleKind.value) {
+    case 'regex':
+      return {
+        kind: 'regex',
+        pattern: rawValue,
+        flags: elements.customRuleCaseSensitive.checked ? '' : 'i'
+      };
+    case 'cidr':
+      return {
+        kind: 'cidr',
+        ranges: splitSessionValues(rawValue)
+      };
+    case 'dictionary':
+    default:
+      return {
+        kind: 'dictionary',
+        values: splitSessionValues(rawValue),
+        caseSensitive: elements.customRuleCaseSensitive.checked
+      };
+  }
+}
+
+function splitSessionValues(rawValue: string): string[] {
+  return rawValue
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function syncPolicyBuilderFields(elements: AppElements): void {
+  const kind = elements.customRuleKind.value;
+  elements.customRuleValue.placeholder =
+    kind === 'regex'
+      ? 'Safe regular expression, up to 160 characters'
+      : kind === 'cidr'
+        ? 'Comma-separated IPv4 ranges, for example 10.31.0.0/16'
+        : 'Comma-separated protected values';
+  elements.customRuleCaseSensitive.disabled = kind === 'cidr';
+  if (kind === 'cidr') elements.customRuleCaseSensitive.checked = false;
+
+  const usesReplacement = elements.customRuleAction.value === 'replace';
+  elements.customRuleReplacement.disabled = !usesReplacement;
+  if (!usesReplacement) elements.customRuleReplacement.value = '';
+}
+
+function renderSessionPolicy(
+  elements: AppElements,
+  rootDocument: Document,
+  rules: readonly PolicyRule[],
+  compiledPolicy: CompiledPolicy | undefined
+): void {
+  elements.clearCustomRulesButton.disabled = rules.length === 0;
+  elements.customPolicyStatus.textContent = compiledPolicy
+    ? `${rules.length} ${rules.length === 1 ? 'rule' : 'rules'} active; ${compiledPolicy.version}. Values and aliases remain in memory only.`
+    : 'No custom session rules.';
+
+  const items = rules.map((rule) => {
+    const item = rootDocument.createElement('li');
+    item.textContent = `${formatMatcherSummary(rule.matcher)}; ${rule.category}; ${formatPolicyAction(rule.action)}`;
+    return item;
+  });
+  elements.customRuleList.replaceChildren(...items);
+}
+
+function formatMatcherSummary(matcher: PolicyMatcher): string {
+  switch (matcher.kind) {
+    case 'regex':
+      return 'Regular expression';
+    case 'dictionary':
+      return `Protected dictionary (${matcher.values.length} ${matcher.values.length === 1 ? 'value' : 'values'})`;
+    case 'cidr':
+      return `IPv4 CIDR (${matcher.ranges.length} ${matcher.ranges.length === 1 ? 'range' : 'ranges'})`;
+    case 'syntax':
+      return 'Syntax matcher';
+  }
 }
 
 function buildCleanedSourceText(elements: AppElements, compareMode: boolean): string {
@@ -617,7 +910,10 @@ function renderVendorSuggestion(
 function renderSafeScore(elements: AppElements, analysis: AnalysisResult): void {
   elements.safeScore.dataset.status = analysis.shareScore.status;
   elements.safeScoreStatus.textContent = analysis.shareScore.status;
-  elements.safeScoreReasons.textContent = analysis.shareScore.reasons.join(' ');
+  elements.safeScoreReasons.textContent = [
+    ...analysis.shareScore.reasons,
+    ...analysis.unsupportedContent
+  ].join(' ');
 }
 
 function renderCategoryCounts(
@@ -782,10 +1078,15 @@ function createFindingItem(
   vendor.textContent = getVendorLabel(finding.vendor);
 
   const action = rootDocument.createElement('span');
-  action.textContent = formatProfileAction(finding.profileAction);
+  action.textContent = finding.policyAction
+    ? formatPolicyAction(finding.policyAction)
+    : formatProfileAction(finding.profileAction);
 
   const token = rootDocument.createElement('span');
-  token.textContent = finding.replacementToken ?? getFallbackTokenLabel(finding.category);
+  token.textContent =
+    finding.replacementLabel ??
+    finding.replacementToken ??
+    getFallbackTokenLabel(finding.category);
 
   const redactControl = createRedactionControl(
     finding,
@@ -921,6 +1222,21 @@ function formatProfileAction(action: SensitiveFinding['profileAction']): string 
   }
 }
 
+function formatPolicyAction(action: PolicyAction): string {
+  switch (action) {
+    case 'allow':
+      return 'Policy allows';
+    case 'review':
+      return 'Policy reviews';
+    case 'replace':
+      return 'Policy replaces';
+    case 'alias':
+      return 'Policy aliases';
+    case 'block':
+      return 'Policy blocks';
+  }
+}
+
 function getFallbackTokenLabel(category: SensitiveCategory): string {
   return category === 'Credential or secret' ? '<REDACTED:SECRET>' : '<REDACTED>';
 }
@@ -937,12 +1253,32 @@ function setStatus(elements: AppElements, message: string): void {
   elements.statusMessage.textContent = message;
 }
 
-function updateCopyButtons(elements: AppElements): void {
+function updateCopyButtons(
+  elements: AppElements,
+  sendBlockedByPolicy = false
+): void {
   const hasOutput = elements.cleanedOutput.value.length > 0;
-  elements.copyTextButton.disabled = !hasOutput;
-  elements.copyMarkdownButton.disabled = !hasOutput;
+  elements.copyTextButton.disabled = !hasOutput || sendBlockedByPolicy;
+  elements.copyMarkdownButton.disabled = !hasOutput || sendBlockedByPolicy;
+  elements.copyReceiptButton.disabled = !hasOutput;
   elements.prepareAiButton.disabled =
-    !hasOutput && elements.rawOutput.value.length === 0;
+    sendBlockedByPolicy || (!hasOutput && elements.rawOutput.value.length === 0);
+}
+
+function hasUnhandledPolicyBlock(
+  findings: readonly SensitiveFinding[],
+  selectedIds: ReadonlySet<string>
+): boolean {
+  return findings.some(
+    (finding) =>
+      finding.policyAction === 'block' &&
+      finding.redactionRanges.length > 0 &&
+      !selectedIds.has(finding.id)
+  );
+}
+
+export function policyHasBlockingRules(policy?: CompiledPolicy): boolean {
+  return policy?.rules.some((rule) => rule.action === 'block') ?? false;
 }
 
 async function copyToClipboard(

@@ -26,12 +26,19 @@ Key capabilities:
 - Select individual redactions or apply purpose-built sharing profiles.
 - Preserve useful configuration structure with consistent replacement tokens.
 - Compare before-and-after text and prepare sanitized Markdown locally.
+- Add memory-only protected dictionaries, IPv4 CIDR ranges, and bounded regular
+  expressions with explicit local policy actions.
+- Copy a non-secret redaction receipt with policy version, local hashes,
+  classification counts, and review status.
 - Review a Safe Share Score before copying the editable result.
 
 NetPaste is local-first. It does not read webpages, does not request host
 permissions, does not upload pasted content, and does not use analytics,
 telemetry, accounts, browser storage, cookies, backend services, or external
 network APIs.
+
+Custom session rules, protected values, and alias mappings remain in memory and
+are cleared when the side panel closes. Receipt hashes are computed locally.
 
 NetPaste is also available as a web app at
 https://netpaste.protocolsandpackets.com/.

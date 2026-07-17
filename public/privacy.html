@@ -215,7 +215,9 @@
           Pasted content is processed locally. NetPaste application code does
           not transmit or upload pasted content. NetPaste does not intentionally
           persist pasted content. Selected redactions and Prepare for AI output
-          are generated locally.
+          are generated locally. Custom session rules, protected values, and
+          alias mappings remain in memory and are cleared when the page or side
+          panel closes.
         </p>
 
         <h2>No accounts or telemetry</h2>
@@ -230,6 +232,15 @@
         <p>
           Copying places content on the system clipboard at the user's request.
           Review cleaned output and sensitive-data findings before sharing.
+        </p>
+
+        <h2>Redaction receipts</h2>
+        <p>
+          When requested, NetPaste computes SHA-256 fingerprints of the original
+          and sanitized text locally and copies a non-secret JSON receipt to the
+          system clipboard. The receipt contains policy metadata, counts,
+          fingerprints, and review status; it does not contain pasted content,
+          protected values, or reversible alias mappings.
         </p>
 
         <p><a href="./">Return to NetPaste</a></p>

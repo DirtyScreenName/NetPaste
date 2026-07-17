@@ -26,6 +26,11 @@ AI tools.
 - Supports pasted CLI/config, Markdown, JSON, YAML, CSV/log, and ticket/email
   text modes.
 - Builds a local before/after text diff in Compare mode.
+- Supports session-only protected dictionaries, IPv4 CIDR ranges, and bounded
+  regular-expression rules with allow, review, replace, alias, and block
+  actions.
+- Copies a non-secret JSON redaction receipt with policy metadata, local
+  SHA-256 hashes, classification counts, and review status.
 - Copies cleaned output as plain text, as a Markdown code block, or through the
   local Prepare for AI Markdown workflow.
 - Ships a Chromium Manifest V3 side-panel build that reuses the same local
@@ -47,7 +52,10 @@ Pasted content is processed locally in the browser. NetPaste application code
 does not transmit or upload pasted content and does not intentionally persist
 pasted content. NetPaste uses no analytics, telemetry, accounts, or external
 network APIs. Selected redactions are applied locally. Copying places content on
-the system clipboard at the user's request.
+the system clipboard at the user's request. Custom session rules, protected
+values, and alias mappings remain in memory and are cleared when the page or
+side panel closes. Receipt generation hashes content locally and copies only
+non-secret metadata when requested.
 
 ## Local development
 

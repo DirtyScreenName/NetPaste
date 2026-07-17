@@ -1,5 +1,10 @@
 # NetPaste Agent Guide
 
+## ExecPlans
+
+When writing complex features or significant refactors, use an ExecPlan (as
+described in `PLANS.md`) from design to implementation.
+
 ## Project mission
 
 NetPaste helps network engineers and IT professionals clean and redact CLI
@@ -7,7 +12,7 @@ output, configs, tickets, and logs locally before sharing them in tickets,
 documentation, GitHub issues, Slack, or AI tools. It may include minimal
 Protocols & Packets attribution as its parent brand.
 
-## v0.3 scope
+## v0.4 scope
 
 Build and maintain a static browser-local web app and a Chromium Manifest V3
 side-panel extension with:
@@ -24,6 +29,10 @@ side-panel extension with:
 - Local-only privacy messaging and a privacy page.
 - Store-ready Chromium extension packaging that is paste-only, side-panel based,
   and limited to the `sidePanel` permission.
+- A versioned deterministic policy engine shared by the web app and side panel.
+- Session-only custom regular-expression, protected-dictionary, and IPv4 CIDR
+  rules with allow, review, replace, stable-alias, and block actions.
+- Non-secret redaction receipts copied at the user's request.
 
 ## Build, test, and verification commands
 
@@ -61,6 +70,12 @@ extension packaging is permitted only for the paste-only local side-panel
 surface. Profile defaults may select local redactions, and users must be able to
 review and change those selections. Minimal Protocols & Packets attribution is
 permitted.
+
+NetPaste AI Shield may share this repository's core engine in future work, but
+it must use a separate manifest, build artifact, store listing, privacy
+disclosure, threat model, permission rationale, and release gate. AI Shield
+host permissions, content scripts, webpage access, and prompt interception are
+not authorized in v0.4.
 
 ## Definition of done
 

@@ -45,6 +45,7 @@ export function applySelectedRedactions(
         ...range,
         label:
           replacementLabels.get(finding.id) ??
+          finding.replacementLabel ??
           finding.replacementToken ??
           getRedactionLabel(finding, cleanedText, range)
       }))
