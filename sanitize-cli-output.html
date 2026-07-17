@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Clean terminal artifacts and sanitize network CLI output locally while preserving commands, indentation, and troubleshooting context." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#05080d" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="NetPaste by Protocols &amp; Packets" />
+    <meta property="og:title" content="Clean and Sanitize Network CLI Output Locally" />
+    <meta property="og:description" content="Remove terminal noise, review sensitive data, and copy readable CLI output without uploading it." />
+    <meta property="og:url" content="https://netpaste.protocolsandpackets.com/sanitize-cli-output.html" />
+    <meta property="og:image" content="https://netpaste.protocolsandpackets.com/netpaste-social-card.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; upgrade-insecure-requests" />
+    <link rel="icon" type="image/png" href="netpaste-p-mark.png" />
+    <link rel="stylesheet" href="guides.css" />
+    <link rel="canonical" href="https://netpaste.protocolsandpackets.com/sanitize-cli-output.html" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to clean and sanitize network CLI output locally",
+        "description": "A browser-local workflow for removing terminal artifacts and reviewing sensitive-looking values before sharing network command output.",
+        "totalTime": "PT2M",
+        "tool": [{"@type": "HowToTool", "name": "NetPaste"}],
+        "step": [
+          {"@type": "HowToStep", "name": "Paste CLI output", "text": "Paste command output copied from a terminal session."},
+          {"@type": "HowToStep", "name": "Clean terminal artifacts", "text": "Normalize line endings and remove ANSI, pagination, backspace, null, and excess blank-line artifacts."},
+          {"@type": "HowToStep", "name": "Review findings", "text": "Review sensitive-looking addresses, identities, credentials, and topology values."},
+          {"@type": "HowToStep", "name": "Copy readable output", "text": "Edit the result if needed, then copy plain text or Markdown."}
+        ],
+        "publisher": {"@type": "Organization", "name": "Protocols & Packets", "url": "https://protocolsandpackets.com/"}
+      }
+    </script>
+    <title>Clean and Sanitize CLI Output Locally | NetPaste</title>
+  </head>
+  <body>
+    <main class="guide-shell">
+      <nav class="guide-nav" aria-label="Primary navigation"><a class="guide-brand" href="./"><img src="netpaste-p-mark.png" alt="" /><span><strong>NetPaste</strong><small>A Protocols &amp; Packets tool</small></span></a><div class="guide-nav-links"><a href="./">Open workbench</a><a href="redact-cisco-config.html">Cisco redaction</a><a href="prepare-network-logs-for-ai.html">AI sharing</a><a href="privacy.html">Privacy</a></div></nav>
+
+      <header class="guide-hero cli"><div class="guide-hero-content"><span class="guide-kicker">Terminal-to-ticket workflow</span><h1>Clean the capture. Keep the signal.</h1><p>Remove terminal noise, review sensitive-looking values, and preserve the commands and context engineers need to troubleshoot.</p><div class="guide-actions"><a class="guide-button" href="./">Clean CLI output</a><a class="guide-button secondary" href="https://chromewebstore.google.com/detail/netpaste/dnnfmemabkibfjnonhlbimfmpbpnehdo">Install the extension</a></div></div></header>
+
+      <div class="guide-grid">
+        <article class="guide-content">
+          <h2>Why copied terminal output becomes difficult to share</h2>
+          <p>Terminal captures often contain ANSI color sequences, backspace-overwrite artifacts, pagination markers, inconsistent line endings, trailing spaces, and repeated blank lines. The result may look correct in the terminal but become noisy in a ticket, document, issue, or chat message.</p>
+          <p>Cleaning should not rewrite commands or normalize away operational evidence. NetPaste makes conservative transformations: it removes common display artifacts while retaining indentation, values, line order, and the editable output. Sensitive-data detection runs separately so cleaning never silently redacts the source.</p>
+
+          <h2>Terminal cleanup example</h2>
+          <div class="code-comparison"><div class="code-panel"><b>Sanitized raw capture</b><pre><code>EDGE-01# show ip interface brief
+Interface              IP-Address      Status
+GigabitEthernet0/0     192.0.2.10      up
+--More--        
+GigabitEthernet0/1     unassigned      down
+
+
+EDGE-01#</code></pre></div><div class="code-panel"><b>Cleaned output</b><pre><code>EDGE-01# show ip interface brief
+Interface              IP-Address      Status
+GigabitEthernet0/0     192.0.2.10      up
+GigabitEthernet0/1     unassigned      down
+
+EDGE-01#</code></pre></div></div>
+
+          <h2>Cleaning and redaction are separate decisions</h2>
+          <p>Cleaning removes presentation artifacts. Redaction changes selected values. Keeping those operations separate makes the result auditable: you can inspect the clean text, review every finding, and decide which values the intended recipient should see.</p>
+          <p>Profiles provide useful defaults for public posts, vendor cases, internal tickets, and AI prompts. The findings panel still leaves each selection under your control, and the Cleaned Output area remains editable before copying.</p>
+
+          <h2>Recommended workflow</h2>
+          <ol><li>Paste output directly from the terminal into NetPaste.</li><li>Choose CLI/config mode and the appropriate vendor rule pack.</li><li>Select a sharing profile and run Clean Output.</li><li>Review the Safe Share Score and each detected category.</li><li>Choose additional redactions or clear selections that the recipient needs.</li><li>Edit the result, then copy text or a fenced Markdown block.</li></ol>
+
+          <p class="guide-note"><strong>Use the current textarea as the source of truth.</strong> Copy actions use the text currently visible in Cleaned Output, including your manual edits and selected redactions.</p>
+
+          <h2>Local handling</h2>
+          <p>The web app and Chromium extension process pasted output locally. NetPaste application code does not upload the capture, call external network APIs, use analytics, or intentionally persist the text. Copying places the edited result on the system clipboard only when requested.</p>
+        </article>
+        <aside class="guide-aside"><span class="guide-label">Artifacts NetPaste cleans</span><ul><li>ANSI terminal color and control sequences</li><li>Backspace and overwrite artifacts</li><li>Common pagination markers</li><li>Null and non-printing control characters</li><li>Windows and Unix line-ending differences</li><li>Trailing whitespace and excess blank lines</li></ul></aside>
+      </div>
+
+      <section class="guide-video" aria-labelledby="demo-title"><h2 id="demo-title">NetPaste in under forty seconds</h2><video controls preload="metadata" poster="netpaste-social-card.png"><source src="media/netpaste-demo-0.3.1.mp4" type="video/mp4" />Your browser does not support embedded video.</video><p class="transcript"><strong>Demo transcript:</strong> Paste network text. Clean terminal artifacts. Review sensitive-looking findings. Apply destination-aware redactions. Copy the editable result without uploading the source material.</p></section>
+      <section class="related-guides"><h2>Continue the workflow</h2><div class="related-list"><a href="redact-cisco-config.html">Redact a Cisco configuration</a><a href="prepare-network-logs-for-ai.html">Prepare network logs for AI</a><a href="./">Open the NetPaste workbench</a></div></section>
+      <footer class="guide-footer"><span>NetPaste by Protocols &amp; Packets</span><span><a href="privacy.html">Privacy</a> · <a href="https://protocolsandpackets.com/">Protocols &amp; Packets</a></span></footer>
+    </main>
+  </body>
+</html>

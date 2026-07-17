@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Prepare network logs and configurations for AI tools by reviewing and redacting sensitive-looking values locally before copying Markdown." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#05080d" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="NetPaste by Protocols &amp; Packets" />
+    <meta property="og:title" content="Prepare Network Logs for AI Without Uploading Them to NetPaste" />
+    <meta property="og:description" content="Apply a local AI-sharing profile, preserve troubleshooting structure, and copy reviewed Markdown." />
+    <meta property="og:url" content="https://netpaste.protocolsandpackets.com/prepare-network-logs-for-ai.html" />
+    <meta property="og:image" content="https://netpaste.protocolsandpackets.com/netpaste-social-card.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; upgrade-insecure-requests" />
+    <link rel="icon" type="image/png" href="netpaste-p-mark.png" />
+    <link rel="stylesheet" href="guides.css" />
+    <link rel="canonical" href="https://netpaste.protocolsandpackets.com/prepare-network-logs-for-ai.html" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to prepare network logs for an AI tool",
+        "description": "A local review workflow for selecting redactions, preserving troubleshooting relationships, and copying network evidence as Markdown.",
+        "totalTime": "PT3M",
+        "tool": [{"@type": "HowToTool", "name": "NetPaste"}],
+        "step": [
+          {"@type": "HowToStep", "name": "Paste the network evidence", "text": "Paste logs, configuration text, or ticket evidence into NetPaste."},
+          {"@type": "HowToStep", "name": "Select the AI Prompt profile", "text": "Use the AI Prompt profile to select recommended local redactions."},
+          {"@type": "HowToStep", "name": "Preserve relationships", "text": "Enable stable tokens so repeated values remain recognizable without exposing the original identifiers."},
+          {"@type": "HowToStep", "name": "Review and copy", "text": "Inspect the editable output and copy Markdown with the local safety header."}
+        ],
+        "publisher": {"@type": "Organization", "name": "Protocols & Packets", "url": "https://protocolsandpackets.com/"}
+      }
+    </script>
+    <title>Prepare Network Logs for AI Locally | NetPaste</title>
+  </head>
+  <body>
+    <main class="guide-shell">
+      <nav class="guide-nav" aria-label="Primary navigation"><a class="guide-brand" href="./"><img src="netpaste-p-mark.png" alt="" /><span><strong>NetPaste</strong><small>A Protocols &amp; Packets tool</small></span></a><div class="guide-nav-links"><a href="./">Open workbench</a><a href="redact-cisco-config.html">Cisco redaction</a><a href="sanitize-cli-output.html">CLI cleanup</a><a href="privacy.html">Privacy</a></div></nav>
+
+      <header class="guide-hero ai"><div class="guide-hero-content"><span class="guide-kicker">Local AI-sharing workflow</span><h1>Share the problem. Not the production identity.</h1><p>Apply recommended redactions, keep repeated values traceable, and copy structured Markdown only after you review the result.</p><div class="guide-actions"><a class="guide-button" href="./">Prepare text for AI</a><a class="guide-button secondary" href="https://chromewebstore.google.com/detail/netpaste/dnnfmemabkibfjnonhlbimfmpbpnehdo">Install the extension</a></div></div></header>
+
+      <div class="guide-grid">
+        <article class="guide-content">
+          <h2>AI prompts need technical context, not production identifiers</h2>
+          <p>Network troubleshooting depends on relationships: the same address appears in an interface, a route, and a log message; the same hostname appears in prompts and neighbor output. Deleting those values entirely can make the evidence hard to reason about. Sending the original values may reveal topology, customers, credentials, or operational naming conventions.</p>
+          <p>NetPaste's Prepare for AI workflow runs locally. It applies the AI Prompt profile, selects recommended findings, preserves structure, and copies a fenced Markdown payload with a short safety header. It does not call an AI service or transmit the source text.</p>
+
+          <h2>Use stable tokens to preserve relationships</h2>
+          <div class="code-comparison"><div class="code-panel"><b>Sanitized example input</b><pre><code>Jul 17 10:14:02 CORE-01:
+BGP-5-ADJCHANGE: neighbor 203.0.113.44 Down
+
+CORE-01# show ip route 203.0.113.44
+Routing entry for 203.0.113.44/32
+  Known via "bgp 64512"
+  Last update from 198.51.100.7</code></pre></div><div class="code-panel"><b>Stable-token output</b><pre><code>Jul 17 10:14:02 &lt;HOST-1&gt;:
+BGP-5-ADJCHANGE: neighbor &lt;IP-1&gt; Down
+
+&lt;HOST-1&gt;# show ip route &lt;IP-1&gt;
+Routing entry for &lt;IP-1&gt;/32
+  Known via "bgp &lt;ASN-1&gt;"
+  Last update from &lt;IP-2&gt;</code></pre></div></div>
+          <p>Stable tokens retain equivalence inside the current text without exposing the original matched value. The output remains editable, so you can add the troubleshooting question and remove irrelevant sections before copying.</p>
+
+          <h2>Recommended workflow</h2>
+          <ol><li>Paste only the evidence needed for the troubleshooting question.</li><li>Choose the matching document mode and vendor rule pack.</li><li>Select the AI Prompt profile or use Prepare for AI.</li><li>Enable stable tokens when repeated values carry useful relationships.</li><li>Review credentials, certificate material, identities, addresses, and metadata.</li><li>Read the complete editable output before copying Markdown into the destination.</li></ol>
+
+          <h2>What NetPaste cannot decide for you</h2>
+          <p>Pattern detection cannot understand every proprietary identifier or contractual restriction. A harmless-looking interface description may still identify a customer. A private address may still reveal an internal topology. The Safe Share Score and profile defaults help prioritize review, but the engineer remains responsible for the final disclosure decision.</p>
+          <p class="guide-note"><strong>Destination matters:</strong> review the AI provider's own retention, training, account, and enterprise-data terms before sending the prepared result. NetPaste only controls the local preparation step.</p>
+
+          <h2>Local-first boundaries</h2>
+          <p>NetPaste uses no AI integration, external network API, account, analytics, or intentional pasted-content storage. The extension does not read webpages. Copying places the reviewed Markdown on the system clipboard at your request.</p>
+        </article>
+        <aside class="guide-aside"><span class="guide-label">AI prompt review</span><ul><li>Remove authentication data and key material</li><li>Tokenize repeated topology identifiers</li><li>Check customer, site, and circuit labels</li><li>Keep only evidence relevant to the question</li><li>Review the destination's data-handling terms</li><li>Read the final payload before pasting it</li></ul></aside>
+      </div>
+
+      <section class="guide-video" aria-labelledby="demo-title"><h2 id="demo-title">Watch the local preparation flow</h2><video controls preload="metadata" poster="netpaste-social-card.png"><source src="media/netpaste-demo-0.3.1.mp4" type="video/mp4" />Your browser does not support embedded video.</video><p class="transcript"><strong>Demo transcript:</strong> Paste network text. Clean terminal artifacts. Review sensitive-looking findings. Apply destination-aware redactions. Copy the editable result without uploading the source material.</p></section>
+      <section class="related-guides"><h2>Continue the workflow</h2><div class="related-list"><a href="redact-cisco-config.html">Redact a Cisco configuration</a><a href="sanitize-cli-output.html">Clean terminal and CLI output</a><a href="./">Open the NetPaste workbench</a></div></section>
+      <footer class="guide-footer"><span>NetPaste by Protocols &amp; Packets</span><span><a href="privacy.html">Privacy</a> · <a href="https://protocolsandpackets.com/">Protocols &amp; Packets</a></span></footer>
+    </main>
+  </body>
+</html>

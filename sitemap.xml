@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
     <loc>https://netpaste.protocolsandpackets.com/</loc>
     <changefreq>monthly</changefreq>
@@ -9,5 +9,27 @@
     <loc>https://netpaste.protocolsandpackets.com/privacy.html</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://netpaste.protocolsandpackets.com/redact-cisco-config.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://netpaste.protocolsandpackets.com/sanitize-cli-output.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://netpaste.protocolsandpackets.com/prepare-network-logs-for-ai.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://netpaste.protocolsandpackets.com/netpaste-social-card.png</video:thumbnail_loc>
+      <video:title>NetPaste local network redaction workflow</video:title>
+      <video:description>Paste network text, clean terminal artifacts, review sensitive-looking findings, apply local redactions, and copy the editable result.</video:description>
+      <video:content_loc>https://netpaste.protocolsandpackets.com/media/netpaste-demo-0.3.1.mp4</video:content_loc>
+      <video:duration>38</video:duration>
+    </video:video>
   </url>
 </urlset>
