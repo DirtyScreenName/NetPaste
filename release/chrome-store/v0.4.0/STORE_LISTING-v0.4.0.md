@@ -1,10 +1,8 @@
-# NetPaste Chrome Web Store Listing
+# NetPaste 0.4.0 Store Upload Sheet
 
-## Release
-
-- Version: `0.4.0`
-- Category: Productivity
-- Language: English (United States)
+This release sheet mirrors the canonical copy in `extension/STORE_LISTING.md`.
+Use it when the current Chrome Web Store review completes and version 0.4.0 can
+be uploaded.
 
 ## Product name
 
@@ -58,7 +56,7 @@ memory and are cleared when the side panel closes.
 
 Web app: https://netpaste.protocolsandpackets.com/
 
-## What's new in 0.4.0
+## What's new
 
 Version 0.4.0 adds memory-only Custom Session policies, protected dictionaries,
 IPv4 CIDR matching, bounded regular expressions, explicit policy actions,
@@ -66,8 +64,10 @@ block-until-handled copy enforcement, and non-secret redaction receipts. The
 release also adds policy precedence, unsupported-content notices, and local
 receipt hashes while preserving NetPaste's paste-only, minimal-permission model.
 
-## URLs
+## Store fields
 
+- Category: Productivity
+- Language: English (United States)
 - Website: https://netpaste.protocolsandpackets.com/
 - Privacy policy: https://netpaste.protocolsandpackets.com/privacy.html
 - Support: https://github.com/DirtyScreenName/NetPaste/issues
@@ -147,16 +147,10 @@ All values below are reserved or synthetic test data.
 4. `netpaste-v0.4.0-screenshot-04-profile-review-1280x800.png`
 5. `netpaste-v0.4.0-screenshot-05-compare-mode-1280x800.png`
 
-## Pre-submission checklist
+## Upload gate
 
-- Upload `release/netpaste-chromium-0.4.0.zip` only after the current review is
-  complete.
-- Upload all five v0.4.0 screenshots in the order above.
-- Confirm the listing version, summary, detailed description, URLs, permission
-  rationale, data-use answers, and reviewer instructions match this document.
-- Run `npm test`, `npm run typecheck`, `npm run build`,
-  `npm run build:extension`, and `npm run package:extension`.
-- Load `dist-extension/` unpacked in Chromium and repeat the reviewer workflow.
-- Confirm the permission warning reflects only the side-panel interface.
-- Confirm there are no console errors or unexpected outbound requests during
-  normal use.
+- Wait for the current Chrome Web Store review to complete.
+- Upload `release/netpaste-chromium-0.4.0.zip`.
+- Upload the five screenshots in the order above.
+- Paste the listing copy and reviewer notes from this sheet.
+- Repeat the release checks and load-unpacked review before submitting.
