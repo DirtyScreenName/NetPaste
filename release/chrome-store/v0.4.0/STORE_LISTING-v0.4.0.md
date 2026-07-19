@@ -66,7 +66,7 @@ receipt hashes while preserving NetPaste's paste-only, minimal-permission model.
 
 ## Store fields
 
-- Category: Productivity
+- Category: Tools
 - Language: English (United States)
 - Website: https://netpaste.protocolsandpackets.com/
 - Privacy policy: https://netpaste.protocolsandpackets.com/privacy.html

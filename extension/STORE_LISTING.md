@@ -3,7 +3,7 @@
 ## Release
 
 - Version: `0.4.0`
-- Category: Productivity
+- Category: Tools
 - Language: English (United States)
 
 ## Product name
