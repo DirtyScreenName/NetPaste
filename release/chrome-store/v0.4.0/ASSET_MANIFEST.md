@@ -5,6 +5,8 @@
 - File: `release/netpaste-chromium-0.4.0.zip`
 - SHA-256: `BBD61DC1107B5EFDEE2D788BBA302261248C1A4958D7E8E49FF3985279A7A499`
 
+This hash is of the already-built artifact at packaging time and must be regenerated at the final upload gate, not treated as checkout-verifiable.
+
 ## Listing copy
 
 - Upload sheet: `STORE_LISTING-v0.4.0.md`

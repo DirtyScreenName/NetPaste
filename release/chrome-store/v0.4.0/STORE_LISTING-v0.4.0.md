@@ -115,14 +115,16 @@ All values below are reserved or synthetic test data.
 5. Open `Custom session policy`. Add a protected-dictionary rule for
    `TRAINING-COMMUNITY`, choose `Block until handled`, and add the rule.
 6. Paste `snmp-server community TRAINING-COMMUNITY ro` into Raw Text and select
-   `Clean Output`. Confirm Copy Text, Copy Markdown, and Prepare for AI remain
-   unavailable until the blocking finding is selected for redaction.
-7. Select `Compare`, load or paste sanitized before-and-after text, then clean it.
+   `Clean Output`.
+7. Clear or uncheck that auto-selected blocking finding. Confirm Copy Text,
+   Copy Markdown, and Prepare for AI remain unavailable until the blocking
+   finding is selected for redaction again.
+8. Select `Compare`, load or paste sanitized before-and-after text, then clean it.
    Confirm both sides use one stable token map in the unified diff.
-8. Select `Copy Receipt`. The copied receipt contains metadata and local hashes,
+9. Select `Copy Receipt`. The copied receipt contains metadata and local hashes,
    not pasted values.
-9. Close and reopen the side panel. Custom session rules are cleared because the
-   extension does not persist them.
+10. Close and reopen the side panel. Custom session rules are cleared because the
+    extension does not persist them.
 
 ## Store privacy-practices answers
 
